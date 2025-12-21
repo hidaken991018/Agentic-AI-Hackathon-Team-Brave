@@ -1,0 +1,153 @@
+@startuml
+title Life Compass ユースケース
+
+actor Developer
+actor User
+participant "Web UI" as UI
+participant "Backend" as Backend
+participant "AI Agent" as AI
+participant "DB" as DB
+participant "Mail Server" as Mail
+
+== 事前準備 ==
+Developer -> AI : ヒアリングJSONのスキーマ設定
+
+note right Developer
+  ヒアリングJSONはライフプラン表の計算で使用するJSONデータ。
+  スキーマをあらかじめ指定することでBackend の計算ロジックの材料とすることができる。
+end note
+
+== ヒアリング〜ライフプラン表作成 ==
+note right User #LightPink
+  Step1: 個人情報の取得（アカウント作成）
+end note
+User -> UI : 個人情報を入力
+activate User
+
+activate UI
+UI -> Backend : 各種定量データの連携
+deactivate UI
+
+activate Backend
+Backend -> DB: 個人情報（Email）を連携
+deactivate Backend
+
+note right User #LightPink
+  Step2: ヒアリング
+end note
+
+User -> UI : 各種定量データを入力
+activate UI
+UI -> Backend : 各種定量データの連携
+deactivate UI
+
+activate Backend
+Backend -> AI : 各種定量データの連携
+deactivate Backend
+
+alt 自由気記述あり
+  User -> UI : 自由記述データ入力
+  activate UI
+  UI -> Backend : 自由記述データ連携
+  deactivate UI
+  activate Backend
+  Backend -> AI : 自由記述データ連携
+  deactivate Backend
+  activate AI
+  AI -> AI : 文脈理解・整理
+  AI -> DB : ユーザー特性の保持/更新
+  deactivate AI
+end
+
+alt 価値観/感情記述あり
+  User -> UI : 価値観/感情データ入力
+  activate UI
+  UI -> Backend : 価値観/感情データ連携
+  deactivate UI
+  activate Backend
+  Backend -> AI : 自価値観/感情データ連携
+  deactivate Backend
+  activate AI
+  AI -> AI : 文脈理解・整理
+  AI -> DB : ユーザー特性の保持/更新
+  deactivate AI
+end
+
+User -> UI : 入力終了選択
+activate UI
+UI -> Backend : 入力終了通知
+deactivate UI
+activate Backend
+Backend -> AI : 入力終了通知
+deactivate Backend
+activate AI
+
+alt 情報不足あり
+  AI -> Backend : 追加質問を提示
+  activate Backend
+  Backend -> UI : 追加質問を提示
+  deactivate Backend
+  activate UI
+  User -> UI : 追加回答
+  deactivate User
+  UI -> Backend : 回答送信
+  deactivate UI
+  activate Backend
+  Backend -> AI : 回答送信
+  deactivate Backend
+end
+
+note right AI #LightPink
+  Step3: ヒアリングJSONの作成/保存
+end note
+
+AI -> AI : ヒアリングJSONの作成
+AI -> Backend : ヒアリングJSONの連携
+deactivate AI
+activate Backend
+
+Backend -> DB : ヒアリングJSONの登録
+
+note right Backend #LightPink
+  Step4: データのライフプラン表の作成
+end note
+
+Backend -> Backend : ライフプラン表の作成（数値計算・シナリオ生成）
+
+Backend -> AI : ライフプラン結果（数値・表）の連携
+activate AI
+AI -> AI : コメント付きライフプラン表の作成
+note right AI
+  ネクストアクションのリストも含む
+end note
+AI -> Backend : コメント付きライフプラン表の連携
+deactivate AI
+
+Backend -> UI : コメント付きライフプラン表の表示
+deactivate Backend
+activate UI
+User -> UI : コメント付きライフプラン表の表示
+deactivate UI
+
+== ライフプラン更新 ==
+note right Developer
+  TBU（OCR機能を用いた更新を行いたい）
+end note
+
+== 継続学習（7日間） ==
+AI -> Mail : クイズ生成指示
+activate Mail
+Mail -> User : 1日3問クイズ配信
+deactivate Mail
+activate User
+User -> Backend : 回答
+deactivate User
+activate Backend
+Backend -> AI : 回答連携
+deactivate Backend
+activate AI
+AI -> AI : 弱点分析
+deactivate AI
+
+
+@enduml
