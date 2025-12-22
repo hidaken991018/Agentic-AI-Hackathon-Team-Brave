@@ -135,18 +135,34 @@ note right Developer
 end note
 
 == 継続学習（7日間） ==
-AI -> Mail : クイズ生成指示
+AI -> AI : 定期起動
+activate AI
+AI -> DB : ユーザー特性/学習状況の取得
+activate DB
+DB -> AI : 
+deactivate DB
+AI -> AI : クイズの生成
+AI -> DB : クイズ保存 
+activate DB
+DB -> AI : クイズID取得
+deactivate DB
+AI -> Mail : メール送信指示
+deactivate AI
 activate Mail
 Mail -> User : 1日3問クイズ配信
 deactivate Mail
 activate User
-User -> Backend : 回答
+User -> UI : リンククリック
 deactivate User
+activate UI
+UI -> Backend : クイズ回答連携
+deactivate UI
 activate Backend
 Backend -> AI : 回答連携
 deactivate Backend
 activate AI
 AI -> AI : 弱点分析
+AI -> DB : 学習状況更新
 deactivate AI
 
 
