@@ -158,7 +158,7 @@ note right DB
   ※次回ヒアリング時に再利用
 end note
 
-Agent -> Sessions : セッション状態更新\n(status: completed)
+Agent -> Sessions : セッション状態更新
 
 Agent --> Backend : ヒアリングJSON
 deactivate Agent
