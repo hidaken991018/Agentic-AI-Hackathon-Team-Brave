@@ -1,4 +1,4 @@
-@startuml
+@startuml hearing-sequence
 title Life Compass - ヒアリングフェーズ AIエージェント詳細シーケンス
 skinparam noteBorderColor #888888
 
@@ -162,6 +162,84 @@ Agent -> Sessions : セッション状態更新\n(status: completed)
 
 Agent --> Backend : ヒアリングJSON
 deactivate Agent
+
+== ライフプラン表受信〜結果生成・永続化 ==
+Backend -> Agent : ライフプラン表送信・生成要求(session_id, ライフプランJSON TB)
+activate Agent
+
+Agent -> Sessions : セッション状態更新\n(ライフプランJSON TB保存)
+activate Sessions
+Sessions --> Agent : 更新完了
+deactivate Sessions
+
+' --- ライフイベント生成 ---
+Agent -> LLM : 構造化出力生成\n(ライフイベント生成指示)
+activate LLM
+note right LLM
+  入力:
+  - ヒアリングJSON（目標、家族構成、タイムライン）
+  - ライフプラン表（数値）
+  
+  出力:
+  - 各年のライフイベント
+  - イベントの財務インパクト
+end note
+LLM --> Agent : ライフイベントJSON
+deactivate LLM
+
+Agent -> Sessions : セッション状態更新\n(life_events保存)
+
+' --- コメント生成 ---
+Agent -> LLM : 構造化出力生成\n(コメント生成指示)
+activate LLM
+note right LLM
+  入力:
+  - ライフプラン表（数値）
+  - ライフイベント
+  - ユーザー特性（価値観、リスク許容度）
+  
+  出力:
+  - 全体サマリー
+  - リスクポイント（資産マイナス時期等）
+  - ポジティブポイント
+  - 年代別コメント
+end note
+LLM --> Agent : コメントJSON
+deactivate LLM
+
+Agent -> Sessions : セッション状態更新\n(comments保存)
+
+' --- チェックリスト生成 ---
+Agent -> LLM : 構造化出力生成\n(チェックリスト生成指示)
+activate LLM
+note right LLM
+  入力:
+  - ヒアリングJSON（現状、目標）
+  - ライフプラン表（数値）
+  - ライフイベント
+  - コメント（リスクポイント）
+  - ユーザー特性
+  
+  出力:
+  - 優先度付きアクションリスト
+  - 各アクションの期待効果
+  - 推奨時期
+end note
+LLM --> Agent : チェックリストJSON
+deactivate LLM
+
+Agent -> Sessions : セッション状態更新\n(checklist保存)
+
+' --- 永続化 ---
+note over Agent, DB : Tool: save_life_plan_result
+Agent -> DB : ライフプラン結果保存\n(ライフイベント, コメント, チェックリスト)
+DB --> Agent : 保存完了
+
+Agent -> Sessions : セッション状態更新\n(status: completed)
+
+Agent --> Backend : 生成結果\n(ライフイベント, コメント, チェックリスト)
+deactivate Agent
+
 
 == エラーハンドリング（共通） ==
 note over Agent, LLM
