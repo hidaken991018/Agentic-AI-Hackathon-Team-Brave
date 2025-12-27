@@ -1,0 +1,180 @@
+@startuml
+title Life Compass - ヒアリングフェーズ AIエージェント詳細シーケンス
+skinparam noteBorderColor #888888
+
+participant "Backend" as Backend
+participant "Agent Engine\n(ADK Agent)" as Agent
+participant "Agent Engine\nSessions" as Sessions
+participant "Gemini API" as LLM
+participant "Cloud SQL /\nFirestore" as DB
+
+note over Backend, DB
+  【概要】
+  ユーザーからの入力データ（定量/自由記述/価値観）を受け取り、
+  AIエージェントが文脈理解・構造化を行い、ヒアリングJSONを生成する。
+  
+  【主要な仕様】
+  ・セッション有効期限: 10日間（途中再開可能）
+  ・追加質問: 最大3回まで
+  ・エラー時: 自動リトライ（最大2回）後にエラー返却
+  ・データ保存: ヒアリングJSON + ユーザー特性をDBに永続化
+end note
+
+== 新規セッション開始 ==
+Backend -> Agent : セッション開始要求(user_id)
+activate Agent
+
+Agent -> Sessions : セッション作成(user_id, ttl=10日)
+activate Sessions
+Sessions --> Agent : session_id, 初期状態
+deactivate Sessions
+
+note over Agent, DB : Tool: fetch_user_profile
+Agent -> DB : 既存ユーザー特性取得
+DB --> Agent : user_profile（存在すれば）
+
+alt ユーザー特性あり
+  Agent -> Sessions : セッション状態更新\n(user_profile設定)
+end
+
+Agent --> Backend : session_id, 初期状態
+deactivate Agent
+
+== セッション復元（途中再開） ==
+Backend -> Agent : セッション復元要求(user_id)
+activate Agent
+
+Agent -> Sessions : 進行中セッション検索(user_id)
+activate Sessions
+Sessions --> Agent : 既存セッション一覧
+deactivate Sessions
+
+alt 進行中セッションあり
+  Agent -> Sessions : セッション状態取得(session_id)
+  activate Sessions
+  Sessions --> Agent : 保存済み状態\n(last_screen, 入力済みデータ)
+  deactivate Sessions
+  Agent --> Backend : session_id, 復元状態, 再開画面
+else 進行中セッションなし
+  Agent --> Backend : セッションなし\n→ 新規セッション開始へ
+end
+deactivate Agent
+
+== 定量データ受信 ==
+Backend -> Agent : 定量データ送信(session_id, data)
+activate Agent
+
+Agent -> Sessions : セッション状態更新\n(定量データ保存, last_screen更新)
+activate Sessions
+Sessions --> Agent : 更新完了
+deactivate Sessions
+
+Agent --> Backend : 受信確認
+deactivate Agent
+
+== 自由記述データ受信 ==
+Backend -> Agent : 自由記述データ送信(session_id, text)
+activate Agent
+
+Agent -> LLM : 構造化出力生成\n(文脈理解指示, 入力テキスト)
+activate LLM
+LLM --> Agent : 分析結果JSON\n(エンティティ, 意図分類, 曖昧表現, 要約)
+deactivate LLM
+
+Agent -> Sessions : セッション状態更新\n(分析結果保存, goals抽出, last_screen更新)
+activate Sessions
+Sessions --> Agent : 更新完了
+deactivate Sessions
+
+Agent --> Backend : 受信確認, 解釈サマリー
+deactivate Agent
+
+== 価値観/感情データ受信 ==
+Backend -> Agent : 価値観データ送信(session_id, data)
+activate Agent
+
+Agent -> LLM : 構造化出力生成\n(価値観分析指示, 入力データ)
+activate LLM
+LLM --> Agent : パーソナリティプロファイルJSON\n(リスク許容度, 計画志向, 矛盾検出)
+deactivate LLM
+
+Agent -> Sessions : セッション状態更新\n(プロファイル保存, last_screen更新)
+activate Sessions
+Sessions --> Agent : 更新完了
+deactivate Sessions
+
+Agent --> Backend : 受信確認
+deactivate Agent
+
+== 入力終了・追加質問判定 ==
+Backend -> Agent : ヒアリング完了要求(session_id)
+activate Agent
+
+Agent -> Sessions : セッション状態取得
+activate Sessions
+Sessions --> Agent : 現在の全状態
+deactivate Sessions
+
+Agent -> LLM : 構造化出力生成\n(完了判定 + 追加質問生成指示)
+activate LLM
+LLM --> Agent : 完了判定結果JSON\n(is_complete, 不足点, 追加質問)
+deactivate LLM
+
+alt 未完了 かつ 質問回数 < 3
+  Agent -> Sessions : セッション状態更新\n(質問回数+1, last_screen更新)
+  Agent --> Backend : 追加質問リスト
+  
+  note over Backend, Agent
+    追加回答受信時は自由記述/価値観と
+    同様のフローで処理し、再度完了要求を呼び出す
+  end note
+  
+else 完了 または 質問回数 >= 3
+  Agent -> Agent : ヒアリングJSON作成へ
+end
+
+== ヒアリングJSON作成・永続化 ==
+Agent -> LLM : 構造化出力生成\n(最終JSON整形指示)
+activate LLM
+LLM --> Agent : ヒアリングJSON
+deactivate LLM
+
+note over Agent, DB : Tool: save_hearing_json
+Agent -> DB : ヒアリングJSON保存
+DB --> Agent : 保存完了
+
+note over Agent, DB : Tool: save_user_profile
+Agent -> DB : ユーザー特性保存/更新
+DB --> Agent : 保存完了
+
+note right DB
+  【ヒアリングJSON】
+  一連のヒアリングに関するデータ
+  （定量データ、目標、タイムライン等）
+  
+  【ユーザー特性】
+  変動しにくい価値観・考え方
+  （リスク許容度、計画志向、優先軸等）
+  ※次回ヒアリング時に再利用
+end note
+
+Agent -> Sessions : セッション状態更新\n(status: completed)
+
+Agent --> Backend : ヒアリングJSON
+deactivate Agent
+
+== エラーハンドリング（共通） ==
+note over Agent, LLM
+  【LLM構造化出力失敗時】
+  1. 自動リトライ（最大2回）
+  2. それでも失敗 → Backend にエラー返却
+end note
+
+note over Agent, DB
+  【DB保存失敗時】
+  1. 自動リトライ（最大2回）
+  2. それでも失敗 → Backend にエラー返却
+  ※ Sessions の状態は保持されるため再試行可能
+end note
+
+@enduml
