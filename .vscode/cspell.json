@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "words": [
+    "Firestore"
+  ],
+  "languageSettings": [
+    {
+      "languageId": "plantuml",
+      "ignoreWords": [
+        "startuml",
+        "skinparam",
+        "enduml"
+      ]
+    }
+  ]
+}
