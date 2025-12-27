@@ -1,0 +1,76 @@
+name: Convert PlantUML to PNG
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'docs/**/*.puml'
+
+permissions:
+  contents: write
+
+jobs:
+  convert-plantuml:
+    runs-on: ubuntu-latest
+    # 無限ループ防止: botによるコミットではワークフローを実行しない
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create images directory
+        run: mkdir -p docs/images
+
+      - name: Find and convert PlantUML files
+        run: |
+          # docsディレクトリ内の全ての.pumlファイルを検索
+          puml_files=$(find docs -name "*.puml" -type f)
+
+          # .pumlファイルが見つからない場合は終了
+          if [ -z "$puml_files" ]; then
+            echo "No .puml files found"
+            exit 0
+          fi
+
+          # 各.pumlファイルを処理
+          echo "$puml_files" | while read puml_file; do
+            echo "Processing: $puml_file"
+
+            # 拡張子を除いたベースファイル名を取得
+            base_name=$(basename "$puml_file" .puml)
+
+            # DockerでPlantUMLをPNGに変換
+            if ! docker run --rm -v "$(pwd):/data" plantuml/plantuml:latest \
+              -tpng \
+              -o /data/docs/images \
+              "/data/$puml_file"; then
+              echo "Error: Failed to convert $puml_file"
+              exit 1
+            fi
+
+            echo "Generated: docs/images/${base_name}.png"
+          done
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          # 新規ファイルも検出するためにgit addしてからチェック
+          git add docs/images/*.png
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          # ファイルは既にステージング済み（Check for changesステップで追加済み）
+          git commit -m "chore: auto-generate PNG from PlantUML files"
+          git push

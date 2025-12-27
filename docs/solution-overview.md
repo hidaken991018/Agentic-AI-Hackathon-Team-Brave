@@ -70,4 +70,4 @@ Life Compass では簡単に、かつ、綿密に行き先の更新と現在地�
 
 TODO: 詳細のアップデート
 
-![alt text](../out/docs/usecase/usecase.png)
+![alt text](./images/usecase.puml)
