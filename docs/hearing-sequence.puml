@@ -6,9 +6,10 @@ participant "Backend" as Backend
 participant "Agent Engine\n(ADK Agent)" as Agent
 participant "Agent Engine\nSessions" as Sessions
 participant "Gemini API" as LLM
-participant "Cloud SQL /\nFirestore" as DB
+participant "Firestore" as Firestore
+participant "Cloud SQL" as CloudSQL
 
-note over Backend, DB
+note over Backend, Firestore
   【概要】
   ユーザーからの入力データ（定量/自由記述/価値観）を受け取り、
   AIエージェントが文脈理解・構造化を行い、ヒアリングJSONを生成する。
@@ -17,8 +18,8 @@ note over Backend, DB
   ・セッション有効期限: 10日間（途中再開可能）
   ・追加質問: 最大3回まで
   ・エラー時: 自動リトライ（最大2回）後にエラー返却
-  ・データ保存: ヒアリングJSON + ユーザー特性をDBに永続化
-  ・DBへのWrite: Backendのみが実行（Agentは読み取り専用）
+  ・データ保存: ヒアリングJSON + ユーザー特性をFirestoreに永続化
+  ・FirestoreへのWrite: Backendのみが実行（Agentは読み取り専用）
 end note
 
 == 新規セッション開始 ==
@@ -30,9 +31,9 @@ activate Sessions
 Sessions --> Agent : session_id, 初期状態
 deactivate Sessions
 
-note over Agent, DB : Tool: fetch_user_profile (Read Only)
-Agent -> DB : 既存ユーザー特性取得
-DB --> Agent : user_profile（存在すれば）
+note over Agent, Firestore : Tool: fetch_user_profile (Read Only)
+Agent -> Firestore : 既存ユーザー特性取得
+Firestore --> Agent : user_profile（存在すれば）
 
 alt ユーザー特性あり
   Agent -> Sessions : セッション状態更新\n(user_profile設定)
@@ -145,17 +146,17 @@ Agent -> Sessions : セッション状態更新\n(ヒアリングJSON保存)
 Agent --> Backend : ヒアリングJSON, ユーザー特性
 deactivate Agent
 
-note over Backend, DB
-  BackendがDBへの書き込みを実行
+note over Backend, Firestore
+  BackendがFirestoreへの書き込みを実行
 end note
 activate Backend
-Backend -> DB : ヒアリングJSON保存
-DB --> Backend : 保存完了
-Backend -> DB : ユーザー特性保存/更新
-DB --> Backend : 保存完了
+Backend -> Firestore : ヒアリングJSON保存
+Firestore --> Backend : 保存完了
+Backend -> Firestore : ユーザー特性保存/更新
+Firestore --> Backend : 保存完了
 deactivate Backend
 
-note right DB
+note right Firestore
   【ヒアリングJSON】
   一連のヒアリングに関するデータ
   （定量データ、目標、タイムライン等）
@@ -236,12 +237,14 @@ Agent -> Sessions : セッション状態更新\n(checklist保存, status: compl
 Agent --> Backend : 生成結果\n(ライフイベント, コメント, チェックリスト)
 deactivate Agent
 
-note over Backend, DB
-  BackendがDBへの書き込みを実行
+note over Backend, CloudSQL
+  BackendがCloudSQL/Firestoreへの書き込みを実行
 end note
 activate Backend
-Backend -> DB : ライフプラン結果保存\n(ライフイベント, コメント, チェックリスト)
-DB --> Backend : 保存完了
+Backend -> CloudSQL : ライフプランメタデータ保存
+CloudSQL --> Backend : 保存完了
+Backend -> Firestore : ライフプランコンテンツ保存
+Firestore --> Backend : 保存完了
 deactivate Backend
 
 
@@ -252,8 +255,8 @@ note over Agent, LLM
   2. それでも失敗 → Backend にエラー返却
 end note
 
-note over Backend, DB
-  【DB保存失敗時（Backend側で発生）】
+note over Backend, CloudSQL
+  【CloudSQL保存失敗時（Backend側で発生）】
   1. 自動リトライ（最大2回）
   2. それでも失敗 → エラーレスポンス返却
   ※ Sessions の状態は保持されるため再試行可能
