@@ -1,0 +1,236 @@
+{
+  "meta": {
+    // ヒアリング仕様のバージョン
+    "hearing_version": "v2",
+
+    // 回答日時
+    "answered_at": "2025-01-20",
+
+    // 通貨単位（全体共通）
+    "currency": "JPY",
+
+    // 時間単位（年次ライフプラン用）
+    "time_unit": "year"
+  },
+
+  // ===== 基本プロフィール =====
+  "basic_profile": {
+    // 生年
+    "birth_year": 1997,
+
+    "household": {
+      // 配偶者情報
+      "partner": {
+        "birth_year": 1999
+      },
+
+      // 子ども情報（将来予定含む）
+      "children": [
+        {
+          // 第1子（すでに誕生）
+          "birth_year": 2024,
+          "status": "born"
+        },
+        {
+          // 第2子（予定）
+          "birth_year": 2030,
+          "status": "planned"
+        }
+      ]
+    }
+  },
+
+  // ===== 経済前提（計算仕様）=====
+  "economic_assumptions": {
+    // インフレ率（生活費・教育費に適用）
+    "inflation_rate": 0.02,
+
+    // 収入成長率（昇給・昇進想定）
+    "income_growth_rate": 0.01,
+
+    // 投資資産の想定利回り
+    "investment_return_rate": 0.03,
+
+    // 生活費の年次増加率
+    "living_cost_growth_rate": 0.02,
+
+    // 教育費の年次増加率
+    "education_cost_growth_rate": 0.02
+  },
+
+  // ===== 収入情報 =====
+  "income": {
+    // 本人の年間収入（万円）
+    "self_annual_income": 950,
+
+    // 配偶者の年間収入（万円）
+    "partner_annual_income": 300,
+
+    // 金額単位
+    "unit": "million_yen",
+
+    // 収入終了年齢（退職）
+    "income_end_age": 65,
+
+    "temporary_incomes": [
+      {
+        // 収入の種類
+        "type": "bonus",
+
+        // 発生年
+        "year": 2026,
+
+        // 金額（万円）
+        "amount": 120,
+
+        // 補足メモ（自由記述）
+        "note": "業績連動の特別ボーナス想定"
+      },
+      {
+        "type": "inheritance",
+        "year": 2040,
+        "amount": 800,
+        "note": "親からの相続（概算）"
+      }
+    ]
+  },
+  // ===== 支出情報 =====
+  "expenses": {
+    // 月間生活費（万円）
+    "monthly_living_cost": 32,
+
+    "housing_cost": {
+      // 現在の住宅費（月額）
+      "current": 0.14,
+
+      "unit": "million_yen_yen_per_month",
+
+      // 将来の住宅費変動
+      "future_change": {
+        "will_increase": true,
+
+        // 変更が発生する年
+        "change_year": 2030,
+
+        // 変更後の月額
+        "expected_amount": 20
+      }
+    }
+  },
+
+  // ===== 初期資産 =====
+  "assets": {
+    // 現金・預貯金
+    "initial_cash": 250,
+
+    // 投資資産
+    "initial_investments": 180,
+
+    "unit": "million_yen",
+
+    // 資産配分ルール
+    "investment_allocation": {
+      "cash_ratio": 0.6,
+      "investment_ratio": 0.4
+    }
+  },
+
+  // ===== 負債 =====
+  "liabilities": {
+    "housing_loan": {
+      // 残高
+      "balance": 2800,
+
+      // 金利（参考）
+      "interest_rate": 0.01,
+
+      // 完済予定年
+      "end_year": 2055
+    }
+  },
+
+  // ===== ライフイベント =====
+  "life_events": [
+    {
+      // 子ども誕生イベント
+      "type": "child_birth",
+      "year": 2024,
+      "child_index": 1
+    },
+    {
+      "type": "child_birth",
+      "year": 2030,
+      "child_index": 2
+    },
+    {
+      // 住宅購入イベント
+      "type": "housing_purchase",
+      "year": 2030,
+
+      // 頭金などの一時支出
+      "one_time_cost": 300,
+
+      // 購入後の月額住宅費
+      "monthly_cost_after": 20
+    },
+    {
+      // 退職イベント
+      "type": "retirement",
+      "year": 2062
+    }
+  ],
+
+  // ===== 教育費モデル =====
+  "education_plan": {
+    // 教育方針
+    "policy": "public",
+
+    // 年齢帯ごとの年間教育費（万円）
+    "children_cost_model": {
+      "nursery": 0.3,
+      "elementary": 0.35,
+      "junior_high": 0.5,
+      "high_school": 0.45,
+      "university": {
+        "public": 0.8,
+        "private": 1.6
+      }
+    },
+
+    "unit": "million_yen_per_year"
+  },
+
+  // ===== 貯蓄ルール =====
+  "savings_rules": {
+    // 支出の優先順位
+    "annual_saving_priority": [
+      "living_cost",
+      "education_cost",
+      "housing_cost",
+      "loan_payment",
+      "savings"
+    ],
+
+    // 最低限残したい現金
+    "minimum_cash_reserve": 100,
+
+    // 赤字時の対応方針
+    "deficit_handling": {
+      "order": ["reduce_investment", "use_cash", "warning_only"]
+    }
+  },
+
+  // ===== 制約条件 =====
+  "constraints": {
+    "additional_debt_allowed": false,
+    "high_risk_investment_allowed": false
+  },
+
+  // ===== ゴール定義 =====
+  "goals": {
+    "retirement_asset_target": {
+      "minimum": 3000,
+      "ideal": 4500
+    }
+  }
+}
