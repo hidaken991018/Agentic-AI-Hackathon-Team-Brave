@@ -2,6 +2,7 @@
   "recommendations": [
     "shd101wyy.markdown-preview-enhanced",
     "streetsidesoftware.code-spell-checker",
-    "jebbs.plantuml"
+    "jebbs.plantuml",
+    "hediet.vscode-drawio"
   ]
 }
