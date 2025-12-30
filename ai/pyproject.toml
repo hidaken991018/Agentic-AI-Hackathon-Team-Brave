@@ -1,0 +1,46 @@
+# プロジェクトメタデータ: 名前、バージョン、説明、パッケージ情報
+[project]
+name = "agent-engine-development"
+version = "0.1.0"
+description = "agent-engine-development"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # Agent Engine APIで使用する、agent_enginesオプション付きGoogle Cloud AI Platform
+    "google-cloud-aiplatform[agent-engines]>=1.112.0",
+    "vertexai>=1.43.0",
+]
+
+# 任意の依存関係グループ
+[project.optional-dependencies]
+dev = [
+    # Ruff: 高速なPythonリンター/フォーマッター
+    "ruff>=0.8.0",
+    # MyPy: 静的型検査ツール
+    "mypy>=1.13.0",
+]
+
+# パッケージのビルド/インストールに使うビルドシステム設定
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# パッケージング設定 — wheelには.pyファイルのみ含める
+[tool.hatch.build.targets.wheel]
+only-include = ["*.py"]
+
+# Ruff（リンター）設定
+[tool.ruff]
+# リントルールの対象Pythonバージョン
+target-version = "py311"
+# 推奨最大行長
+line-length = 100
+
+[tool.ruff.lint]
+# 適用するエラーコードの選択
+select = ["E", "F", "I", "B", "UP"]
+
+# MyPy（静的型検査）設定
+[tool.mypy]
+python_version = "3.11"
+strict = true
