@@ -1,76 +1,73 @@
 #!/usr/bin/env python3
-"""Create Agent Engine instance with agent identity only (no code deployment)."""
+"""エージェントコードなしでAgent Engineインスタンスを作成する（agent identity のみ）"""
 
 import argparse
 import sys
 
 import vertexai
 from vertexai import agent_engines
-from vertexai.preview.reasoning_engines import types
 
 
-def create_agent_engine_with_identity(project_id: str, location: str) -> None:
-    """Create Agent Engine instance with agent identity only.
+def create_agent_engine_with_identity(
+    project_id: str, location: str, display_name: str = None
+) -> None:
+    """エージェント ID のみで Agent Engine インスタンスを作成する。
 
     Args:
-        project_id: GCP project ID
-        location: GCP region (e.g., us-central1)
+        project_id: GCP プロジェクト ID
+        location: GCP リージョン（例: us-central1）
+        display_name: Agent Engine の表示名（オプション）
     """
-    # Initialize Vertex AI
+    # Vertex AI を初期化
     vertexai.init(project=project_id, location=location)
 
-    print(f"Creating Agent Engine in {project_id}/{location}...")
+    if display_name:
+        print(f"Creating Agent Engine '{display_name}' in {project_id}/{location}...")
+    else:
+        print(f"Creating Agent Engine in {project_id}/{location}...")
 
-    # Create Agent Engine with identity_type only (no agent code)
+    # デフォルト identity で Agent Engine を作成（エージェントコードなし）
+    # agent_engine=None を指定すると、agent identity を持つ空の Agent Engine が作成される
     remote_app = agent_engines.create(
-        agent=None,
-        config={
-            "identity_type": types.IdentityType.AGENT_IDENTITY,
-        },
+        agent_engine=None,
+        display_name=display_name,
     )
 
-    # Output results
+    # 結果を出力
     print("\n" + "=" * 60)
     print("Agent Engine created successfully!")
     print("=" * 60)
     print(f"Resource Name: {remote_app.resource_name}")
-    print(f"Service Account: {remote_app.service_account}")
     print("=" * 60)
-
-    # Output shell commands for next steps
-    print("\n# Next steps - Run these commands to grant IAM roles:")
-    print(f"export SERVICE_ACCOUNT=\"{remote_app.service_account}\"")
-    print(f"export PROJECT_ID=\"{project_id}\"")
     print()
-    print("# Grant recommended roles")
-    print("gcloud projects add-iam-policy-binding $PROJECT_ID \\")
-    print('    --member="serviceAccount:$SERVICE_ACCOUNT" \\')
-    print('    --role="roles/aiplatform.expressUser"')
-    print()
-    print("gcloud projects add-iam-policy-binding $PROJECT_ID \\")
-    print('    --member="serviceAccount:$SERVICE_ACCOUNT" \\')
-    print('    --role="roles/serviceusage.serviceUsageConsumer"')
+    print("次のステップは agent-engine-setup.md を参照してください。")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create Agent Engine instance with agent identity only"
+        description="エージェント ID のみで Agent Engine インスタンスを作成"
     )
     parser.add_argument(
         "--project-id",
         required=True,
-        help="GCP project ID",
+        help="GCP プロジェクト ID",
     )
     parser.add_argument(
         "--location",
         default="us-central1",
-        help="GCP region (default: us-central1)",
+        help="GCP リージョン（デフォルト: us-central1）",
+    )
+    parser.add_argument(
+        "--display-name",
+        help="Agent Engine の表示名（例: hearing-agent）",
     )
 
     args = parser.parse_args()
 
     try:
-        create_agent_engine_with_identity(args.project_id, args.location)
+        create_agent_engine_with_identity(
+            args.project_id, args.location, args.display_name
+        )
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
