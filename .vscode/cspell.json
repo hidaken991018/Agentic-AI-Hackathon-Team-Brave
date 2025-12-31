@@ -8,6 +8,17 @@
     "pyproject",
     "serviceusage",
     "venv",
-    "vertexai"
+    "vertexai",
+    "Firestore"
+  ],
+  "languageSettings": [
+    {
+      "languageId": "plantuml",
+      "ignoreWords": [
+        "startuml",
+        "skinparam",
+        "enduml"
+      ]
+    }
   ]
 }
