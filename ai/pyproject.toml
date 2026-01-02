@@ -7,7 +7,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     # Agent Engine APIで使用する、agent_enginesオプション付きGoogle Cloud AI Platform
-    "google-cloud-aiplatform[agent-engines]>=1.112.0",
+    "google-cloud-aiplatform[agent-engines,adk]>=1.112.0",
     "vertexai>=1.43.0",
 ]
 

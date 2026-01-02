@@ -29,6 +29,7 @@ uv run python create_agent_id.py \
 ```
 
 **オプション**:
+
 - `--display-name`: Agent Engine の表示名（例: `hearing-agent`, `planning-agent` など）
 
 出力例:
@@ -102,24 +103,7 @@ gcloud projects get-iam-policy YOUR_PROJECT_ID \
 
 IAM 設定完了後、エージェントコードを追加してデプロイします。
 
-```python
-import vertexai
-from vertexai import agent_engines
-
-vertexai.init(project="your-project-id", location="us-central1")
-
-# 作成済みの Agent Engine を取得
-AGENT_ENGINE_ID = "xxxxx"  # Step 1 で取得した ID
-remote_app = agent_engines.get(
-    f"projects/your-project-id/locations/us-central1/reasoningEngines/{AGENT_ENGINE_ID}"
-)
-
-# エージェントコードを追加して更新
-def my_agent():
-    pass
-
-remote_app.update(agent=my_agent)
-```
+サンプルコード：`ai\create_agent.temp.py`
 
 ## 複数の Agent Engine を作成する場合
 
