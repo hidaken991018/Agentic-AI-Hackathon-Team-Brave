@@ -21,6 +21,7 @@ async def main():
 
     print("Agent Engine を取得中...")
     # TODO: この処理に時間がかかる原因を調査
+    # issue:https://github.com/hidaken991018/Agentic-AI-Hackathon-Team-Brave/issues/111
     agent_engine = client.agent_engines.get(name=RESOURCE_NAME)
 
     print(f"Agent Engine: {agent_engine.api_resource.name}")
