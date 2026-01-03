@@ -19,43 +19,15 @@ gcloud auth application-default login
 
 ## 使い方
 
-### Step 1: エージェント ID を作成
-
-```bash
-uv run python create_agent_id.py \
-    --project-id YOUR_PROJECT_ID \
-    --location us-central1 \
-    --display-name hearing-agent
-```
-
-**オプション**:
-
-- `--display-name`: Agent Engine の表示名（例: `hearing-agent`, `planning-agent` など）
-
-出力例:
-
-```
-Creating Agent Engine in YOUR_PROJECT_ID/us-central1...
-Identified the following requirements: {'pydantic': '2.12.5', 'cloudpickle': '3.1.2'}
-...
-
-============================================================
-Agent Engine created successfully!
-============================================================
-Resource Name: projects/123456789/locations/us-central1/reasoningEngines/4593827750569050112
-============================================================
-
-次のステップは agent-engine-setup.md を参照してください。
-```
-
-**Resource Name からプロジェクト番号を確認**:
-
-- 例: `projects/123456789/locations/us-central1/reasoningEngines/xxxxx`
-- この場合、`PROJECT_NUMBER` は `123456789`
-
-### Step 2: Service Account を確認
+### Step 1: Service Account を確認
 
 Agent Engine はデフォルトの **Vertex AI Service Agent** を使用します。
+
+<!--
+TODO:Service Account と Agent Engine を1対1で紐づけるための専用のService Accountを作成する。
+- 理由: 各 Agent Engine を個別に管理・監査しやすくするため
+- イシュー：https://github.com/hidaken991018/Agentic-AI-Hackathon-Team-Brave/issues/112
+-->
 
 **Service Account の形式**:
 
@@ -63,7 +35,7 @@ Agent Engine はデフォルトの **Vertex AI Service Agent** を使用しま�
 service-<PROJECT_NUMBER>@gcp-sa-aiplatform-re.iam.gserviceaccount.com
 ```
 
-### Step 3: IAM ロールを付与
+### Step 2: IAM ロールを付与
 
 > **重要**: このステップは**同一プロジェクトで一度だけ実行すれば OK**です。
 >
@@ -83,9 +55,9 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
     --role="roles/serviceusage.serviceUsageConsumer"
 ```
 
-### Step 4: IAM 設定を確認
+### Step 3: IAM 設定を確認
 
-> **注**: このステップも初回のみで十分です（確認のため）。
+> **注**: このステップも**同一プロジェクトで一度だけ実行すれば OK**（確認のため）。
 
 ```bash
 gcloud projects get-iam-policy YOUR_PROJECT_ID \
@@ -94,7 +66,7 @@ gcloud projects get-iam-policy YOUR_PROJECT_ID \
     --format="table(bindings.role)"
 ```
 
-### Step 5: エージェントコードを追加
+### Step 4: エージェントコードを追加
 
 > **注**: このステップは**各 Agent Engine ごとに実行が必要**です。
 >
