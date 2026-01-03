@@ -1,2 +1,4 @@
 # plantuml での画像出力先
 /out/
+
+**/.venv/

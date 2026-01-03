@@ -1,6 +1,14 @@
 {
   "version": "0.2",
   "words": [
+    "aiplatform",
+    "cloudpickle",
+    "mypy",
+    "pydantic",
+    "pyproject",
+    "serviceusage",
+    "venv",
+    "vertexai",
     "Firestore"
   ],
   "languageSettings": [
