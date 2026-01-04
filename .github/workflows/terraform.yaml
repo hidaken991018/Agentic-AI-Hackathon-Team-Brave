@@ -37,11 +37,12 @@ jobs:
         uses: 'google-github-actions/auth@v2'
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          token_format: 'access_token' # 【追加】GCSアクセスに必須
-      
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2' # 【追加】安定性の向上
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          # service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          # token_format: 'access_token' # 【追加】GCSアクセスに必須
+
+      # - name: 'Set up Cloud SDK'
+      # uses: 'google-github-actions/setup-gcloud@v2' # 【追加】安定性の向上
 
       # 3. Terraform のセットアップ
       - name: Setup Terraform
