@@ -1,3 +1,33 @@
+## Node.js/npmのバージョン管理
+
+本プロジェクトでは Volta を用いたNode.js/npm のバージョン管理にも対応する。
+
+### (1) Volta のインストール
+ターミナルより以下のコマンドで Volta をインストールする。※インストール後、ターミナルを再起動する。
+
+```curl https://get.volta.sh | bash```
+
+### (2) バージョン確認を行う
+`node -v`を実行し、 `package.json` に記載のバージョンと同一であることを確認する。
+もし相違がある場合には、パスが通っていない可能性がある。
+
+#### パス通し(1) パス設定
+~/.zshrc に以下を追記（すでにあれば順番だけ確認）
+
+```export VOLTA_HOME="$HOME/.volta"```
+```export PATH="$VOLTA_HOME/bin:$PATH"```
+
+
+#### パス通し(2)反映
+
+`source ~/.zshrc`：現在のシェルへも設定を適用する。
+`hash -r`：Node.js のバージョンキャッシュを削除する。
+
+
+#### パス通し(3) 確認
+`node -v`を実行し、 `package.json` に記載のバージョンと同一であることを確認する。
+
+
 ## データベース（PostgreSQL/Firestore）の起動
 
 ### (1)Docker Desktop を起動する
