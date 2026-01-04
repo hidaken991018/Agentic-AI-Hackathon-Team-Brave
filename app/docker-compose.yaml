@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: local-postgres
+    environment:
+      POSTGRES_DB: life-compass-postgres
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: P@ssw0rd!
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U myuser -d mydb']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  firestore-emulator:
+    image: andreysenov/firebase-tools:latest
+    ports:
+      - '8080:8080'
+      - '4000:4000'
+    volumes:
+      - './firebase.json:/home/node/firebase.json'
+      - './.firebaserc:/home/node/.firebaserc'
+    command: ['firebase', 'emulators:start']
+
+volumes:
+  pgdata:
+  firestoredata:
