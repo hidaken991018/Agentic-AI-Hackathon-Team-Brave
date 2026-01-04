@@ -1,0 +1,9 @@
+# Terraformのバイナリ（今回の巨大ファイルの正体）を除外
+.terraform/
+
+# ローカルの状態ファイルを除外（GCSで管理するため不要）
+*.tfstate
+*.tfstate.backup
+
+# ロックファイルを除外
+.terraform.lock.hcl
