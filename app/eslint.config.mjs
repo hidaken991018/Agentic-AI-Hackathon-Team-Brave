@@ -1,18 +1,15 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier/flat";
 import importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
 
 const eslintConfig = [
-  // 1. ESLint除外設定
+  // 1. Next.js / TypeScript / Prettier の基本設定
+  ...nextVitals,
+  ...nextTs,
+  prettier,
+  // 2. ESLint除外設定
   {
     ignores: [
       ".next/**",
@@ -22,10 +19,6 @@ const eslintConfig = [
       "node_modules/**",
     ],
   },
-
-  // 2. Next.js / TypeScript / Prettier の基本設定
-  ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
-
   // 3. 個別詳細ルール
   {
     plugins: {
