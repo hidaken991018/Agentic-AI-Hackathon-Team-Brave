@@ -17,6 +17,9 @@ jobs:
   terraform:
     name: "Terraform Workflow"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloud  
 
     env:
       # GitHub SecretsからプロジェクトIDをTerraform変数に渡す
@@ -47,9 +50,7 @@ jobs:
       # 5. Terraform Plan (実行計画の表示)
       - name: Terraform Plan
         id: plan
-        working-directory: cloud
         run: terraform plan -no-color
-        continue-on-error: true
 
       # 6. Terraform Apply (反映)
       # 条件: mainブランチへのプッシュ（またはマージ）時のみ実行する
