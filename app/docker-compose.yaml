@@ -3,7 +3,7 @@ services:
     image: postgres:16
     container_name: local-postgres
     environment:
-      POSTGRES_DB: mydb
+      POSTGRES_DB: life-compass-postgres
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: P@ssw0rd!
     ports:
