@@ -1,12 +1,12 @@
-name: "Terraform Deployment"
+name: 'Terraform Deployment'
 
 on:
   push:
     branches:
-      - main  # mainブランチにコードがプッシュまたはマージされたら実行
+      - main # mainブランチにコードがプッシュまたはマージされたら実行
   pull_request:
     branches:
-      - main  # プルリクエストが作成された時にも実行（Planのみ確認するため）
+      - main # プルリクエストが作成された時にも実行（Planのみ確認するため）
 
 # Workload Identity 連携に必要な権限設定
 permissions:
@@ -15,8 +15,11 @@ permissions:
 
 jobs:
   terraform:
-    name: "Terraform Workflow"
+    name: 'Terraform Workflow'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloud
 
     env:
       # GitHub SecretsからプロジェクトIDをTerraform変数に渡す
@@ -33,8 +36,13 @@ jobs:
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          project_id: 'fifth-boulder-481807-f8'
+          workload_identity_provider: 'projects/803525069908/locations/global/workloadIdentityPools/brave-hackathon-pool/providers/barave-hackathon-provider'
+          service_account: 'my-github-actions@fifth-boulder-481807-f8.iam.gserviceaccount.com'
+          # token_format: 'access_token' # 【追加】GCSアクセスに必須
+
+      # - name: 'Set up Cloud SDK'
+      # uses: 'google-github-actions/setup-gcloud@v2' # 【追加】安定性の向上
 
       # 3. Terraform のセットアップ
       - name: Setup Terraform
@@ -42,13 +50,12 @@ jobs:
 
       # 4. Terraform 初期化 (backend "gcs" への接続)
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -reconfigure
 
       # 5. Terraform Plan (実行計画の表示)
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color
-        continue-on-error: true
 
       # 6. Terraform Apply (反映)
       # 条件: mainブランチへのプッシュ（またはマージ）時のみ実行する
