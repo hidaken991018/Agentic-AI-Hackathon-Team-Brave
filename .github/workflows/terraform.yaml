@@ -47,6 +47,7 @@ jobs:
       # 5. Terraform Plan (実行計画の表示)
       - name: Terraform Plan
         id: plan
+        working-directory: cloud
         run: terraform plan -no-color
         continue-on-error: true
 
