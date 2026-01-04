@@ -1,12 +1,12 @@
-name: "Terraform Deployment"
+name: 'Terraform Deployment'
 
 on:
   push:
     branches:
-      - main  # mainブランチにコードがプッシュまたはマージされたら実行
+      - main # mainブランチにコードがプッシュまたはマージされたら実行
   pull_request:
     branches:
-      - main  # プルリクエストが作成された時にも実行（Planのみ確認するため）
+      - main # プルリクエストが作成された時にも実行（Planのみ確認するため）
 
 # Workload Identity 連携に必要な権限設定
 permissions:
@@ -15,11 +15,11 @@ permissions:
 
 jobs:
   terraform:
-    name: "Terraform Workflow"
+    name: 'Terraform Workflow'
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./cloud  
+        working-directory: ./cloud
 
     env:
       # GitHub SecretsからプロジェクトIDをTerraform変数に渡す
@@ -38,7 +38,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          # service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           # token_format: 'access_token' # 【追加】GCSアクセスに必須
 
       # - name: 'Set up Cloud SDK'
