@@ -1,3 +1,10 @@
 {
-  "markdown-preview-enhanced.enableExtendedTableSyntax": true
+  "markdown-preview-enhanced.enableExtendedTableSyntax": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "typescript.preferences.importModuleSpecifier": "non-relative"
 }

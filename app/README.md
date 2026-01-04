@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Node.js/npmのバージョン管理
 
-## Getting Started
+本プロジェクトでは Volta を用いたNode.js/npm のバージョン管理にも対応する。
 
-First, run the development server:
+### (1) Volta のインストール
+ターミナルより以下のコマンドで Volta をインストールする。※インストール後、ターミナルを再起動する。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+```curl https://get.volta.sh | bash```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### (2) バージョン確認を行う
+`node -v`を実行し、 `package.json` に記載のバージョンと同一であることを確認する。
+もし相違がある場合には、パスが通っていない可能性がある。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### パス通し(1) パス設定
+~/.zshrc に以下を追記（すでにあれば順番だけ確認）
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```export VOLTA_HOME="$HOME/.volta"```
+```export PATH="$VOLTA_HOME/bin:$PATH"```
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+#### パス通し(2)反映
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`source ~/.zshrc`：現在のシェルへも設定を適用する。
+`hash -r`：Node.js のバージョンキャッシュを削除する。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+#### パス通し(3) 確認
+`node -v`を実行し、 `package.json` に記載のバージョンと同一であることを確認する。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## データベース（PostgreSQL/Firestore）の起動
+
+### (1)Docker Desktop を起動する
+
+[Docker Desktop](https://matsuand.github.io/docs.docker.jp.onthefly/desktop/mac/install/)を起動する（要インストール）。
+
+### (2)docker-compose.yaml と同一階層へ移動する。
+
+以下のコマンド（`~`の部分は自身のローカルディレクトリで読み替える）を実行し、docker-compose.yaml が存在するディレクトリへ移動する。
+
+`mv ~/app`
+
+### (3)docker コンテナを起動する
+
+以下のコマンドで docker コンテナを起動する。
+
+`docker compose -p life-compass up --build -d`
+
+その後、Docker Desktop の `Containers` にて `life-compass` が表示されていれば OK。
+
+### ※動作確認
+
+#### 動作確認(1)PostgreSQL
+
+以下のコマンドを実行し、DB 内に入れることを確認する。
+
+`docker exec -it local-postgres psql -U myuser -d mydb`
+
+#### 動作確認(2)Firestore
+
+以下の URL へブラウザ経由でアクセスし、エミュレーターが表示されることを確認する。
+
+`http://localhost:4000`
