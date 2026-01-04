@@ -1,0 +1,57 @@
+name: "Terraform Deployment"
+
+on:
+  push:
+    branches:
+      - main  # mainブランチにコードがプッシュまたはマージされたら実行
+  pull_request:
+    branches:
+      - main  # プルリクエストが作成された時にも実行（Planのみ確認するため）
+
+# Workload Identity 連携に必要な権限設定
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    name: "Terraform Workflow"
+    runs-on: ubuntu-latest
+
+    env:
+      # GitHub SecretsからプロジェクトIDをTerraform変数に渡す
+      TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      TF_VAR_allowed_users: ${{ secrets.GCP_ALLOWED_USERS }}
+
+    steps:
+      # 1. コードのチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Google Cloud 認証 (Workload Identity 連携)
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # 3. Terraform のセットアップ
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 4. Terraform 初期化 (backend "gcs" への接続)
+      - name: Terraform Init
+        run: terraform init
+
+      # 5. Terraform Plan (実行計画の表示)
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      # 6. Terraform Apply (反映)
+      # 条件: mainブランチへのプッシュ（またはマージ）時のみ実行する
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve

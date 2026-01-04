@@ -1,4 +1,13 @@
 # --------------------------------------------------------------------------------
+# 0. 変数の定義（GitHub Actions 等から注入されるリスト）
+# --------------------------------------------------------------------------------
+variable "allowed_users" {
+  description = "Cloud Run へのアクセスを許可するメールアドレスのリスト"
+  type        = list(string)
+  # GitHub Actions の Secrets で設定
+}
+
+# --------------------------------------------------------------------------------
 # Cloud Run サービス本体
 # --------------------------------------------------------------------------------
 resource "google_cloud_run_v2_service" "front_back_app" {
@@ -39,19 +48,17 @@ locals {
 # IAM 権限設定（リソースへのアクセス許可）
 # --------------------------------------------------------------------------------
 
-# 1. 指定したユーザー(4名)へのアクセス権限
+# 1. 変数 allowed_users に基づくアクセス権限設定
 resource "google_cloud_run_v2_service_iam_member" "private_access" {
-  for_each = toset([
-    "user:member1@gmail.com",
-    "user:member2@gmail.com",
-    "user:member3@gmail.com",
-    "user:member4@gmail.com",
-  ])
+  # リストを set に変換してループ処理
+  for_each = toset(var.allowed_users)
 
   location = google_cloud_run_v2_service.front_back_app.location
   name     = google_cloud_run_v2_service.front_back_app.name
   role     = "roles/run.invoker"
-  member   = each.value
+  
+  # 各メールアドレスに "user:" プレフィックスを付けて指定
+  member   = "user:${each.value}"
 }
 
 # 2. Vertex AI 利用権限の付与

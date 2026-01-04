@@ -7,9 +7,9 @@ resource "google_firestore_database" "database" {
   depends_on = [google_project_service.required_apis]
 }
 
-# --- データベース (Cloud SQL: PostgreSQLを想定) ---
+# --- データベース (Cloud SQL: PostgreSQL) ---
 resource "google_sql_database_instance" "main_db" {
-  name             = "life-compass-db"
+  name             = "life-compass-postgres"
   region           = "asia-northeast1"
   database_version = "POSTGRES_15"
   
