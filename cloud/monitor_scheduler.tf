@@ -4,7 +4,7 @@
 resource "google_cloud_scheduler_job" "periodic_job" {
   name             = "daily-life-quiz-send-job"
   description      = "定期的なクイズ送信命令"
-  schedule         = "0 9 * * *" 
+  schedule          = "0 9 * * *" 
   time_zone        = "Asia/Tokyo"
   region           = "asia-northeast1"
   paused           = true # デフォルトは無効
@@ -15,7 +15,10 @@ resource "google_cloud_scheduler_job" "periodic_job" {
     
     # Schedulerが自身を証明してCloud Runを叩くためのトークン設定
     oidc_token {
+      # サービスアカウントのアドレスを直接指定するか、dataソースを利用
       service_account_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+      # Cloud RunのURLをAudienceとして指定
+      audience = google_cloud_run_v2_service.front_back_app.uri
     }
   }
 
@@ -68,6 +71,12 @@ resource "google_monitoring_alert_policy" "run_error_alert" {
       duration   = "60s"
       comparison = "COMPARISON_GT"
       threshold_value = 1
+
+      #エラー解消のための集計設定
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_RATE" # DELTA型メトリクスを「率」に変換して整列させる
+      }
     }
   }
 }

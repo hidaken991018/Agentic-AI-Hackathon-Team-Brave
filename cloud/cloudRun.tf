@@ -41,8 +41,9 @@ resource "google_cloud_run_v2_service" "front_back_app" {
 
 # Cloud Runが使用するサービスアカウント（デフォルトを使用する場合の指定）
 locals {
-  run_service_account = "serviceAccount:${google_cloud_run_v2_service.front_back_app.template[0].service_account != "" ? google_cloud_run_v2_service.front_back_app.template[0].service_account : data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  run_service_account = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
+
 
 # --------------------------------------------------------------------------------
 # IAM 権限設定（リソースへのアクセス許可）
