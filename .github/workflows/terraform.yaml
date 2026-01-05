@@ -36,10 +36,10 @@ jobs:
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
         with:
-          project_id: 'fifth-boulder-481807-f8'
-          workload_identity_provider: 'projects/803525069908/locations/global/workloadIdentityPools/brave-hackathon-pool/providers/barave-hackathon-provider'
-          service_account: 'my-github-actions@fifth-boulder-481807-f8.iam.gserviceaccount.com'
-          # token_format: 'access_token' # 【追加】GCSアクセスに必須
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
 
       # - name: 'Set up Cloud SDK'
       # uses: 'google-github-actions/setup-gcloud@v2' # 【追加】安定性の向上
