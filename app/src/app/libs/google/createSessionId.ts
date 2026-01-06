@@ -1,0 +1,51 @@
+// libs/createSession.ts
+import { GoogleAuth } from "google-auth-library";
+
+import { CONSTS } from "@/app/consts";
+
+export async function createSessionId(userId: string): Promise<string> {
+  const LOCATION = process.env.VERTEX_LOCATION!;
+  const RESOURCE_NAME = process.env.RESOURCE_NAME!;
+
+  const auth = new GoogleAuth({
+    scopes: [CONSTS.ENDPOINT.GOOGLE.CREATE_SESSION_ID],
+  });
+  const client = await auth.getClient();
+  const { token } = await client.getAccessToken();
+
+  if (!token) {
+    throw new Error("Failed to get access token");
+  }
+
+  const res = await fetch(
+    `https://${LOCATION}-aiplatform.googleapis.com/v1/${RESOURCE_NAME}:query`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        classMethod: "async_create_session",
+        input: {
+          user_id: userId,
+        },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  const json = await res.json();
+
+  const sessionId =
+    json?.output?.id ?? json?.output?.session_id ?? json?.session_id;
+
+  if (!sessionId) {
+    throw new Error(`session_id not found: ${JSON.stringify(json)}`);
+  }
+
+  return sessionId;
+}
