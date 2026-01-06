@@ -49,6 +49,7 @@ jobs:
       # 5. ビルドとプッシュ
       # NEXT_PUBLIC_ 変数は --build-arg で渡す
       - name: Build and Push Container
+        working-directory: ./app
         run: |-
           docker build --platform linux/amd64 \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
