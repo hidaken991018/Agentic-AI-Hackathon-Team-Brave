@@ -1,7 +1,7 @@
-// libs/createSession.ts
 import { GoogleAuth } from "google-auth-library";
 
 import { CONSTS } from "@/app/consts";
+import { getSessionURI } from "@/app/libs/google/generateURI";
 
 export async function createSessionId(userId: string): Promise<string> {
   const LOCATION = process.env.VERTEX_LOCATION!;
@@ -17,22 +17,19 @@ export async function createSessionId(userId: string): Promise<string> {
     throw new Error("Failed to get access token");
   }
 
-  const res = await fetch(
-    `https://${LOCATION}-aiplatform.googleapis.com/v1/${RESOURCE_NAME}:query`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        classMethod: "async_create_session",
-        input: {
-          user_id: userId,
-        },
-      }),
+  const res = await fetch(getSessionURI(LOCATION, RESOURCE_NAME), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      classMethod: "async_create_session",
+      input: {
+        user_id: userId,
+      },
+    }),
+  });
 
   if (!res.ok) {
     throw new Error(await res.text());

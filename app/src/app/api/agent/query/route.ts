@@ -9,18 +9,20 @@ import { hearingJsonSchemaForLlm } from "@/app/schema/hearingJsonSchema";
 
 type Body = {
   userId: string;
+  usedSessionId: string | undefined;
   userMessage: string;
 };
 
 export async function POST(req: Request) {
-  const { userId, userMessage } = (await req.json()) as Body;
+  const { userId, usedSessionId, userMessage } = (await req.json()) as Body;
 
   // === アクセストークン取得 ===
   const accessToken = await getAccessToken();
 
   // === セッションの取得 ===
-  // TODO セッションIDの有効性チェック => 有効な場合はセッション生成スキップ
-  const sessionId = await createSessionId(userId);
+  const sessionId = usedSessionId
+    ? usedSessionId
+    : await createSessionId(userId);
 
   // === FP AI によるJson更新指示の生成 ===
   // 指示を作成 TODO プロンプト整備＆別ファイルへの切り出し
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
     requestToAi,
     userMessage,
   );
+
   console.log("FP AIの成果物: ", instructions);
 
   // === Json 更新 AI によるJson更新指示の生成 ===
