@@ -16,6 +16,8 @@ type Body = {
 export async function POST(req: Request) {
   const { userId, usedSessionId, userMessage } = (await req.json()) as Body;
 
+  console.log("Received request", userMessage);
+
   // === アクセストークン取得 ===
   const accessToken = await getAccessToken();
 
@@ -26,11 +28,12 @@ export async function POST(req: Request) {
 
   // === FP AI によるJson更新指示の生成 ===
   // 指示を作成 TODO プロンプト整備＆別ファイルへの切り出し
-  const requestToAi = `ユーザーのコメントを受けて、json更新AIに対する指示を出してください
-    （あなたのアドバイスの要点と提案と次のアクションに分けて指示を出してください。）。
-    質問返しはせず、json更新AIに対する指示を出してください。指示はJSON形式ではなく口語的にお願いします。
-    ユーザーのコメントは右記。`;
+  const requestToAi = `あなたの指示をインプットとして、この後、JSON更新AIがJSONを生成します。
+    あなたはユーザーへの質問返しはせず、Json更新AIに対する指示を出してください。
+    Json更新AIへの指示はJSON形式ではなく口語的にお願いしたいのと、JSON生成AIに対してJSONを生成するように明示的に指示してください。
+    ユーザーのコメントは次のとおりです。`;
 
+  const fpAiStart = Date.now();
   const instructions = await fpInstructor(
     accessToken,
     userId,
@@ -38,12 +41,22 @@ export async function POST(req: Request) {
     requestToAi,
     userMessage,
   );
-
-  console.log("FP AIの成果物: ", instructions);
+  console.log("==============================");
+  console.log(`FP AI の処理結果（process time: ${Date.now() - fpAiStart}）`);
+  console.log("-----");
+  console.log(instructions);
+  console.log("==============================");
 
   // === Json 更新 AI によるJson更新指示の生成 ===
+  const jsonEditorStart = Date.now();
   const response = await jsonEditor(hearingJsonSchemaForLlm, instructions);
-  console.log("JSON 作成AIの成果物: ", response);
+  console.log("==============================");
+  console.log(
+    `json Editor AI の処理結果（process time: ${Date.now() - jsonEditorStart}）`,
+  );
+  console.log("-----");
+  console.log(response);
+  console.log("==============================");
 
   // === レスポンス ===
   let parsed: unknown;

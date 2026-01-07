@@ -9,8 +9,8 @@ from vertexai.agent_engines import AdkApp
 
 # === 定数定義 ===
 LOCATION = "us-central1"
-MODEL_NAME = "gemini-2.0-flash-exp"
-DISPLAY_NAME_AGENT_ENGINE = "poc_if_agent_engine_fp_01"
+MODEL_NAME = "gemini-2.5-flash"
+DISPLAY_NAME_AGENT_ENGINE = "poc_if_agent_engine_fp_02"
 FP_INSTRUCTION = """
         あなたはファイナンシャルプランナーです。ユーザーの家計やライフプランに関する相談に応じ、わかりやすく助言を行ってください。具体的な投資助言は行わず、一般的なアドバイスにとどめてください。常にファイナンシャルプランナーとして振る舞ってください。
         """

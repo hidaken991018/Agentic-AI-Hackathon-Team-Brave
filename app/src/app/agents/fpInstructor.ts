@@ -11,8 +11,8 @@ export async function fpInstructor(
   const query = `${CONSTS.PROMPT.ROLE_DEFINITION.FP}${requestToAi}${userMessage}`;
 
   return await queryAIAgent(
-    process.env.VERTEX_LOCATION || "",
-    process.env.RESOURCE_NAME || "",
+    process.env.VERTEX_AGT_LOCATION || "",
+    process.env.VERTEX_AGT_RESOURCE_NAME || "",
     accessToken,
     userId,
     sessionId,

@@ -4,8 +4,8 @@ import { CONSTS } from "@/app/consts";
 import { getSessionURI } from "@/app/libs/google/generateURI";
 
 export async function createSessionId(userId: string): Promise<string> {
-  const LOCATION = process.env.VERTEX_LOCATION!;
-  const RESOURCE_NAME = process.env.RESOURCE_NAME!;
+  const LOCATION = process.env.VERTEX_AGT_LOCATION!;
+  const RESOURCE_NAME = process.env.VERTEX_AGT_RESOURCE_NAME!;
 
   const auth = new GoogleAuth({
     scopes: [CONSTS.ENDPOINT.GOOGLE.CREATE_SESSION_ID],
