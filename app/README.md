@@ -62,3 +62,18 @@
 以下の URL へブラウザ経由でアクセスし、エミュレーターが表示されることを確認する。
 
 `http://localhost:4000`
+
+## ローカル環境でのAIエージェント/Gemini APIを実行する方法
+
+以下のコマンドを実行し、GCP Auth へログインする。
+
+```
+gcloud auth application-default login
+```
+
+自動的に `application_default_credentials.json` がローカルに作成される。準備完了。
+
+### ※GCP Auth からログアウト
+
+GCP Auth からログアウトするためには以下をコマンドする。
+gcloud auth application-default revoke
