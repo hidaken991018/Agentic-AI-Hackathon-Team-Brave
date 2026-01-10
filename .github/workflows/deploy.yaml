@@ -3,31 +3,31 @@ name: Build and Deploy to Cloud Run
 on:
   push:
     tags:
-      - "v*" # mainブランチにpushされたら起動
+      - "v*" # v1.0.0 などのタグがpushされた時のみ起動
+  workflow_dispatch:
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # GitHub Variablesに登録
-  REGION: asia-northeast1 # GitHub Variablesに登録
-  REPOSITORY: nextjs-app # Artifact Registryのリポジトリ名
-  SERVICE: life-compass-agent # Cloud Runのサービス名
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast1
+  REPOSITORY: nextjs-app
+  SERVICE: life-compass-agent
   IMAGE_NAME: app-image
 
 jobs:
-  deploy:
+  # --- Job 1: ビルド & プッシュ ---
+  build:
     runs-on: ubuntu-latest
-
-    # Workload Identity を使う場合に必要（推奨設定）
     permissions:
       contents: "read"
       id-token: "write"
-
+    outputs:
+      image_tag: ${{ github.sha }} # デプロイJobへ渡すID
     steps:
       # 1. チェックアウト
       - name: Checkout
         uses: actions/checkout@v4
 
       # 2. Google Cloud 認証
-      # ※ 事前にWorkload IdentityまたはService Account Keyの設定が必要です
       - id: "auth"
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
@@ -35,7 +35,6 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          create_credentials_file: true
 
       # 3. gcloud CLI のセットアップ
       - name: "Set up Cloud SDK"
@@ -43,28 +42,41 @@ jobs:
 
       # 4. Docker 認証
       - name: Docker Auth
-        run: |-
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       # 5. ビルドとプッシュ
-      # NEXT_PUBLIC_ 変数は --build-arg で渡す
       - name: Build and Push Container
         working-directory: ./app
         run: |-
-          docker build --platform linux/amd64 \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          IMAGE_URL=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker build --platform linux/amd64 -t $IMAGE_URL .
+          docker push $IMAGE_URL
 
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+  # --- Job 2: デプロイ ---
+  deploy:
+    needs: build # build Job が成功した後に実行
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      # 1. Google Cloud 認証
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      # 6. Cloud Run へのデプロイ
-      # サーバーサイド変数（Basic認証など）は env_vars で渡す
+      # 2. Cloud Run へのデプロイ
       - name: Deploy to Cloud Run
         uses: "google-github-actions/deploy-cloudrun@v2"
         with:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
-          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
+          flags: "--allow-unauthenticated"
           env_vars: |-
             BASIC_AUTH_USER=${{ secrets.BASIC_AUTH_USER }}
             BASIC_AUTH_PASSWORD=${{ secrets.BASIC_AUTH_PASSWORD }}
