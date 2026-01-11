@@ -19,24 +19,29 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # 1. チェックアウト
       - name: Checkout
         uses: actions/checkout@v4
 
+        # 2. Node.js セットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: "./app/package.json"
           cache: "npm"
           cache-dependency-path: "./app/package-lock.json"
 
+      # 3. 依存関係インストール
       - name: Install dependencies
         working-directory: ./app
         run: npm ci
 
+      # 4. Lint 実行
       - name: Run Lint
         working-directory: ./app
         run: npm run lint
 
+      # 5. テスト実行
       # TODO:　テストコードが整い次第有効化
       # - name: Run Test
       #   working-directory: ./app
