@@ -1,5 +1,4 @@
 # 1. 依存関係のインストール
-# node:18-alpine から node:20-alpine に変更
 FROM node:24-alpine AS base
 
 FROM base AS deps
