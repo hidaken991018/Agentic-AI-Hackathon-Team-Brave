@@ -1,0 +1,85 @@
+name: AI エージェントを Vertex AI にデプロイ
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_name:
+        description: 'デプロイするエージェント (fp_agent または、 all※複数エージェントをデプロイする場合)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - fp_agent
+          - all
+  push:
+    branches:
+      - main
+    paths:
+      - 'ai/agents/**'
+      - 'ai/deploy_agent.py'
+      - 'ai/config.py'
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    name: エージェントをデプロイ
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # タグpush または手動トリガーで'all'の場合は全エージェント、それ以外は指定されたエージェント
+        agent: ${{(github.ref_type == 'tag' || github.event.inputs.agent_name == 'all') && fromJSON('["fp_agent"]')|| fromJSON(format('["{0}"]', github.event.inputs.agent_name || 'fp_agent'))}}
+      fail-fast: false
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: UV をインストール
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: 依存関係をインストール
+        working-directory: ./ai
+        run: |
+          uv sync
+
+      - name: Google Cloud に認証
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Cloud SDK をセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: ${{ matrix.agent }} をデプロイ
+        working-directory: ./ai
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_LOCATION: ${{ secrets.GCP_LOCATION }}
+          GCP_AGENTS_DEPLOY_BUCKET: ${{ secrets.GCP_AGENTS_DEPLOY_BUCKET }}
+        run: |
+          echo "エージェントをデプロイ中: ${{ matrix.agent }}"
+          uv run python deploy_agent.py ${{ matrix.agent }}
+
+      - name: デプロイ状況を報告
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ ${{ matrix.agent }} のデプロイに成功しました"
+          else
+            echo "❌ ${{ matrix.agent }} のデプロイに失敗しました"
+            exit 1
+          fi

@@ -66,16 +66,56 @@ gcloud projects get-iam-policy YOUR_PROJECT_ID \
     --format="table(bindings.role)"
 ```
 
-### Step 4: エージェントコードを追加
+### Step 4: エージェントをデプロイ
 
 > **注**: このステップは**各 Agent Engine ごとに実行が必要**です。
 >
 > - 各 Agent Engine は独立したインスタンスです
 > - それぞれに異なるエージェントコード（hearing-agent, planning-agent など）をデプロイします
 
-IAM 設定完了後、エージェントコードを追加してデプロイします。
+IAM 設定完了後、エージェントをデプロイします。
 
-サンプルコード：`ai\create_agent.temp.py`
+#### ローカルでのデプロイ
+
+```bash
+# FP エージェントをデプロイ
+uv run python deploy_agent.py fp_agent
+```
+
+#### GitHub Actions によるデプロイ
+
+GitHub Actions を使用して自動デプロイが可能です。
+
+**手動トリガー:**
+
+1. GitHub リポジトリの "Actions" タブに移動
+2. "AI エージェントを Vertex AI にデプロイ" ワークフローを選択
+3. "Run workflow" をクリック
+4. デプロイするエージェント（`fp_agent` または `all`）を選択
+5. "Run workflow" を実行
+
+**自動トリガー:**
+
+- `main` ブランチへのプッシュ時に自動実行（`ai/agents/`, `ai/deploy_agent.py`, `ai/config.py` の変更時のみ）
+- リリースタグ（`v*`）が付与されたときに自動実行（全エージェントをデプロイ）
+
+**必要な GitHub Secrets:**
+
+GitHub Actions を使用する場合、以下の Secrets を設定してください：
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: Workload Identity Provider ID
+- `GCP_SERVICE_ACCOUNT`: Service Account のメールアドレス
+- `GCP_PROJECT_ID`: GCP プロジェクト ID
+- `GCP_LOCATION`: GCP リージョン（例: `us-central1`）
+- `GCP_AGENTS_DEPLOY_BUCKET`: ステージングバケット（例: `gs://your-bucket-name`）
+
+**リリースタグでのデプロイ:**
+
+```bash
+# リリースタグを作成してプッシュ（全エージェントが自動デプロイされます）
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## 複数の Agent Engine を作成する場合
 
@@ -83,18 +123,62 @@ IAM 設定完了後、エージェントコードを追加してデプロイし�
 
 ```
 【1つ目の Agent Engine】
-✓ Step 1: エージェント ID 作成
-✓ Step 2: Service Account 確認
-✓ Step 3: IAM ロール付与（初回のみ）
-✓ Step 4: IAM 設定確認（初回のみ）
-✓ Step 5: エージェントコード追加
+✓ Step 1: Service Account 確認
+✓ Step 2: IAM ロール付与（初回のみ）
+✓ Step 3: IAM 設定確認（初回のみ）
+✓ Step 4: エージェントコード追加
 
 【2つ目以降の Agent Engine】
-✓ Step 1: エージェント ID 作成
-✗ Step 2: Service Account 確認（スキップ可能）
-✗ Step 3: IAM ロール付与（スキップ可能）
-✗ Step 4: IAM 設定確認（スキップ可能）
-✓ Step 5: エージェントコード追加
+✗ Step 1: Service Account 確認（スキップ可能）
+✗ Step 2: IAM ロール付与（スキップ可能）
+✗ Step 3: IAM 設定確認（スキップ可能）
+✓ Step 4: エージェントコード追加
+```
+
+## 新しいエージェントの追加
+
+1. `agents/` ディレクトリに新しいエージェント定義ファイルを作成:
+
+```python
+# agents/my_new_agent.py
+from google.adk.agents import Agent
+
+def create_my_new_agent() -> Agent:
+    """Create my new agent"""
+    return Agent(
+        model="gemini-2.5-flash",
+        name="my_new_agent",
+        instruction="エージェントの指示をここに記述",
+    )
+
+# Agent metadata for deployment
+AGENT_CONFIG = {
+    "display_name": "my-new-agent",
+    "description": "My new agent description",
+}
+```
+
+2. `agents/__init__.py` にエクスポートを追加:
+
+```python
+from .my_new_agent import create_my_new_agent
+
+__all__ = [..., "create_my_new_agent"]
+```
+
+3. `.github/workflows/deploy-agents.yml` の `options` にエージェント名を追加:
+
+```yaml
+options:
+  - fp_agent
+  - all
+  - my_new_agent # 追加
+```
+
+4. デプロイ:
+
+```bash
+uv run python deploy_agent.py my_new_agent
 ```
 
 ## 利用可能なリージョン
