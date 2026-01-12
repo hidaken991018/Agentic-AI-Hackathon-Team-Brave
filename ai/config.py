@@ -8,7 +8,7 @@ import os
 load_dotenv()
 
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-LOCATION = os.getenv("GCP_LOCATION")
+LOCATION = os.getenv("GCP_AGENTS_LOCATION")
 AGENTS_DEPLOY_BUCKET = os.getenv("GCP_AGENTS_DEPLOY_BUCKET")
 print(f"Using PROJECT_ID: {PROJECT_ID}")
 print(f"Using LOCATION: {LOCATION}")

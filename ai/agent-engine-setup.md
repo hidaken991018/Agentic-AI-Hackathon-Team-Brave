@@ -106,7 +106,7 @@ GitHub Actions を使用する場合、以下の Secrets を設定してくだ�
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: Workload Identity Provider ID
 - `GCP_SERVICE_ACCOUNT`: Service Account のメールアドレス
 - `GCP_PROJECT_ID`: GCP プロジェクト ID
-- `GCP_LOCATION`: GCP リージョン（例: `us-central1`）
+- `GCP_AGENTS_LOCATION`: GCP リージョン（例: `us-central1`）
 - `GCP_AGENTS_DEPLOY_BUCKET`: ステージングバケット（例: `gs://your-bucket-name`）
 
 **リリースタグでのデプロイ:**

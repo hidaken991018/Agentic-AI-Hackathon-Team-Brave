@@ -68,7 +68,7 @@ jobs:
         working-directory: ./ai
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_LOCATION: ${{ secrets.GCP_LOCATION }}
+          GCP_AGENTS_LOCATION: ${{ secrets.GCP_AGENTS_LOCATION }}
           GCP_AGENTS_DEPLOY_BUCKET: ${{ secrets.GCP_AGENTS_DEPLOY_BUCKET }}
         run: |
           echo "エージェントをデプロイ中: ${{ matrix.agent }}"
