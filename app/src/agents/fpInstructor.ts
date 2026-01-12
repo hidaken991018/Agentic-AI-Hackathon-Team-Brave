@@ -1,5 +1,5 @@
-import { CONSTS } from "@/app/consts";
-import { queryAIAgent } from "@/app/libs/google/queryAIAgent";
+import { CONSTS } from "@/consts";
+import { queryAIAgent } from "@/libs/google/queryAIAgent";
 
 export async function fpInstructor(
   accessToken: string,

@@ -1,11 +1,11 @@
 // app/api/agent/query/route.ts
 export const runtime = "nodejs";
 
-import { fpInstructor } from "@/app/agents/fpInstructor";
-import { jsonEditor } from "@/app/agents/jsonEditor";
-import { createSessionId } from "@/app/libs/google/createSessionId";
-import { getAccessToken } from "@/app/libs/google/getAccessToken";
-import { hearingJsonSchemaForLlm } from "@/app/schema/hearingJsonSchema";
+import { fpInstructor } from "@/agents/fpInstructor";
+import { jsonEditor } from "@/agents/jsonEditor";
+import { createSessionId } from "@/libs/google/createSessionId";
+import { getAccessToken } from "@/libs/google/getAccessToken";
+import { hearingJsonSchemaForLlm } from "@/schema/hearingJsonSchema";
 
 type Body = {
   userId: string;

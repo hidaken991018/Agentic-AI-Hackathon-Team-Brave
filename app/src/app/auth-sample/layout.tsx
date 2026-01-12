@@ -1,4 +1,4 @@
-import { AuthGuard } from "@/app/components/auth/AuthGuard";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 import type { Metadata } from "next";
 
