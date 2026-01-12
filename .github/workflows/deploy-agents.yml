@@ -11,12 +11,6 @@ on:
         options:
           - fp_agent
           - all
-  pull_request:
-    paths:
-      - 'ai/agents/**'
-      - 'ai/deploy_agent.py'
-      - 'ai/config.py'
-      - '.github/workflows/deploy-agents.yml'
   push:
     branches:
       - main
