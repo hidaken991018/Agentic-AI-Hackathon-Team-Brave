@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git rev-parse:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr create:*)",
+      "WebFetch(domain:docs.cloud.google.com)",
+      "WebFetch(domain:google.github.io)",
+      "WebSearch"
+    ]
+  },
+  "enabledPlugins": {
+    "serena@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true
+  }
+}
