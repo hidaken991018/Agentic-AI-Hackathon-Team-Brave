@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*" # v1.0.0 などの本番用タグがpushされた時のみ起動
-      - "dev*" # dev-32 などの一時デプロイ用のタグがpushされた時のみ起動
   workflow_dispatch:
 
 env:
