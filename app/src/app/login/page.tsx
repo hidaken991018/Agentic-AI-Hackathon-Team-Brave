@@ -2,7 +2,7 @@
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState } from "react";
 
-import { login } from "@/app/libs/firebase/auth";
+import { login } from "@/libs/firebase/auth";
 
 /**
  * ログインページ

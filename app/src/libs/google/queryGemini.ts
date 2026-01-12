@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-import { CONSTS } from "@/app/consts";
+import { CONSTS } from "@/consts";
 
 const ai = new GoogleGenAI({
   vertexai: true,

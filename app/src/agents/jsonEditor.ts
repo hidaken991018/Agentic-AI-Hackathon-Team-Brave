@@ -1,5 +1,5 @@
-import { CONSTS } from "@/app/consts";
-import { queryGemini } from "@/app/libs/google/queryGemini";
+import { CONSTS } from "@/consts";
+import { queryGemini } from "@/libs/google/queryGemini";
 
 export async function jsonEditor<T>(responseSchema: T, instructions: string) {
   const prompt = `${CONSTS.PROMPT.ROLE_DEFINITION.JSON_EDITOR}\n${instructions}`;

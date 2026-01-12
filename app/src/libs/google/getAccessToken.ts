@@ -1,6 +1,6 @@
 import { GoogleAuth } from "google-auth-library";
 
-import { CONSTS } from "@/app/consts";
+import { CONSTS } from "@/consts";
 
 export async function getAccessToken(): Promise<string> {
   const auth = new GoogleAuth({

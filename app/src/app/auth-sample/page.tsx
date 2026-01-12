@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/app/context/AuthContext";
-import { logout } from "@/app/libs/firebase/auth";
+import { useAuth } from "@/context/AuthContext";
+import { logout } from "@/libs/firebase/auth";
 
 /** 認証サンプルページ
  * @returns JSX.Element

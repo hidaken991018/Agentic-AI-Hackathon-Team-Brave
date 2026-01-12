@@ -1,7 +1,7 @@
 import { GoogleAuth } from "google-auth-library";
 
-import { CONSTS } from "@/app/consts";
-import { getSessionURI } from "@/app/libs/google/generateURI";
+import { CONSTS } from "@/consts";
+import { getSessionURI } from "@/libs/google/generateURI";
 
 export async function createSessionId(userId: string): Promise<string> {
   const LOCATION = process.env.VERTEX_AGT_LOCATION!;
