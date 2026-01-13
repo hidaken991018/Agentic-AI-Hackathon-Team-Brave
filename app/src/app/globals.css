@@ -1,26 +1,84 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-lg: var(--radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.625rem;
+
+  /* メインカラー (#1D3557) */
+  --primary: #1d3557;
+  --primary-foreground: #f1faee; /* 文字はベースカラー */
+
+  /* ベースカラー (#F1FAEE) */
+  --background: #f1faee;
+  /* テキストカラー (#222222) */
+  --foreground: #222222;
+
+  /* カード設定（ベースカラーと同じか、白にするのが一般的。今回はベースに合わせます） */
+  --card: #f1faee;
+  --card-foreground: #222222;
+  --popover: #f1faee;
+  --popover-foreground: #222222;
+
+  /* ユーティリティカラー1 (#457B9D) -> Secondaryとして使用 */
+  --secondary: #457b9d;
+  --secondary-foreground: #f1faee;
+
+  /* ユーティリティカラー2 (#A8DADC) -> Muted（薄い背景）として使用 */
+  --muted: #a8dadc; /* 背景などに使うと少し濃いかもしれないので、opacity調整しても良い */
+  /* サブテキストカラー (#696969) */
+  --muted-foreground: #696969;
+
+  /* ユーティリティカラー2 (#A8DADC) -> Accent（ホバー色など）として使用 */
+  --accent: #a8dadc;
+  --accent-foreground: #1d3557;
+
+  /* アクセントカラー (#E63946) -> Destructive（警告・強調）として使用 */
+  --destructive: #e63946;
+  --destructive-foreground: #f1faee;
+
+  /* 境界線と入力フォーム（ユーティリティ2や1を使用） */
+  --border: #a8dadc;
+  --input: #457b9d;
+  --ring: #1d3557;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
 }
