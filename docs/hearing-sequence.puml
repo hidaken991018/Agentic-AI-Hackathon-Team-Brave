@@ -13,7 +13,7 @@ note over Backend, Firestore
   【概要】
   ユーザーからの入力データ（定量/自由記述/価値観）を受け取り、
   AIエージェントが文脈理解・構造化を行い、ヒアリングJSONを生成する。
-  
+
   【主要な仕様】
   ・セッション有効期限: 10日間（途中再開可能）
   ・追加質問: 最大3回まで
@@ -66,43 +66,21 @@ deactivate Agent
 Backend -> Agent : 定量データ送信(session_id, data)
 activate Agent
 
-Agent -> Sessions : セッション状態更新\n(定量データ保存, last_screen更新)
+Agent -> Sessions : セッションへ保存
 activate Sessions
-Sessions --> Agent : 更新完了
+Sessions --> Agent : 
 deactivate Sessions
 
 Agent --> Backend : 受信確認
 deactivate Agent
 
-== 自由記述データ受信 ==
-Backend -> Agent : 自由記述データ送信(session_id, text)
+== 定性データ受信（自由記述/価値観/感情） ==
+Backend -> Agent : 定性データ送信\n(session_id, content)
 activate Agent
 
-Agent -> LLM : 構造化出力生成\n(文脈理解指示, 入力テキスト)
-activate LLM
-LLM --> Agent : 分析結果JSON\n(エンティティ, 意図分類, 曖昧表現, 要約)
-deactivate LLM
-
-Agent -> Sessions : セッション状態更新\n(分析結果保存, goals抽出, last_screen更新)
+Agent -> Sessions : 物価上昇率や収入成長率を算出
 activate Sessions
-Sessions --> Agent : 更新完了
-deactivate Sessions
-
-Agent --> Backend : 受信確認, 解釈サマリー
-deactivate Agent
-
-== 価値観/感情データ受信 ==
-Backend -> Agent : 価値観データ送信(session_id, data)
-activate Agent
-
-Agent -> LLM : 構造化出力生成\n(価値観分析指示, 入力データ)
-activate LLM
-LLM --> Agent : パーソナリティプロファイルJSON\n(リスク許容度, 計画志向, 矛盾検出)
-deactivate LLM
-
-Agent -> Sessions : セッション状態更新\n(プロファイル保存, last_screen更新)
-activate Sessions
-Sessions --> Agent : 更新完了
+Sessions --> Agent : 
 deactivate Sessions
 
 Agent --> Backend : 受信確認
@@ -112,10 +90,6 @@ deactivate Agent
 Backend -> Agent : ヒアリング完了要求(session_id)
 activate Agent
 
-Agent -> Sessions : セッション状態取得
-activate Sessions
-Sessions --> Agent : 現在の全状態
-deactivate Sessions
 
 Agent -> LLM : 構造化出力生成\n(完了判定 + 追加質問生成指示)
 activate LLM
@@ -126,10 +100,7 @@ alt 未完了 かつ 質問回数 < 3
   Agent -> Sessions : セッション状態更新\n(質問回数+1, last_screen更新)
   Agent --> Backend : 追加質問リスト
   
-  note over Backend, Agent
-    追加回答受信時は自由記述/価値観と
-    同様のフローで処理し、再度完了要求を呼び出す
-  end note
+
   
 else 完了 または 質問回数 >= 3
   Agent -> Agent : ヒアリングJSON作成へ
