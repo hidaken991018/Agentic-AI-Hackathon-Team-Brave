@@ -124,7 +124,7 @@ export default function DesignSystemPage() {
               #1D3557
             </div>
             <p className="text-muted-foreground text-xs">
-              主にボタン、重要なUI要素、ヘッダーに使用
+              サイトの印象となる色、主にボタン、重要なUI要素、ヘッダーに使用
             </p>
           </div>
 
@@ -137,7 +137,7 @@ export default function DesignSystemPage() {
               #E63946
             </div>
             <p className="text-muted-foreground text-xs">
-              警告、エラー、重要な注目ポイントに使用
+              アクセントで使用する色、重要な注目ポイントに使用
             </p>
           </div>
 
@@ -149,9 +149,7 @@ export default function DesignSystemPage() {
             <div className="bg-background border-border text-foreground flex h-20 items-center justify-center rounded-md border font-bold">
               #F1FAEE
             </div>
-            <p className="text-muted-foreground text-xs">
-              全体の背景色。清潔感のあるオフホワイト
-            </p>
+            <p className="text-muted-foreground text-xs">全体の背景色。</p>
           </div>
 
           {/* 4. テキストカラー */}

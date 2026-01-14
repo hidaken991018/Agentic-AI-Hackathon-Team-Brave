@@ -45,7 +45,7 @@
   /* テキストカラー (#222222) */
   --foreground: #222222;
 
-  /* カード設定（ベースカラーと同じか、白にするのが一般的。今回はベースに合わせます） */
+  /* カード設定(ベースカラー) */
   --card: #f1faee;
   --card-foreground: #222222;
   --popover: #f1faee;
@@ -56,7 +56,7 @@
   --secondary-foreground: #f1faee;
 
   /* ユーティリティカラー2 (#A8DADC) -> Muted（薄い背景）として使用 */
-  --muted: #a8dadc; /* 背景などに使うと少し濃いかもしれないので、opacity調整しても良い */
+  --muted: #a8dadc;
   /* サブテキストカラー (#696969) */
   --muted-foreground: #696969;
 
