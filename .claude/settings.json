@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
+      "Bash(tree:*)",
       "Bash(git commit:*)",
       "Bash(git push)",
       "Bash(git rev-parse:*)",
