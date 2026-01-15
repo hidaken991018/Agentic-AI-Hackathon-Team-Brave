@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen:json": "tsx -r tsconfig-paths/register scripts/zod/genJson.ts"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
