@@ -2,3 +2,5 @@
 /out/
 
 **/.venv/
+/.serena
+.claude/settings.local.json

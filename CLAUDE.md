@@ -57,8 +57,12 @@ cd ai
 # 依存関係のインストール（初回のみ）
 uv sync
 
-# Pythonスクリプトの実行
-uv run python <スクリプト名>.py
+# エージェントのデプロイ
+uv run python deploy_agent.py fp_agent        # FPエージェント
+uv run python deploy_agent.py sample_agent    # サンプルエージェント
+
+# エージェントのテスト
+uv run python test_agent.py
 
 # リントとフォーマット
 uv run ruff check .          # Lint
@@ -119,7 +123,7 @@ gcloud auth application-default revoke
 [1] FP Instructor Agent（Python/Vertex AI Agent Engine）
     - モデル: Gemini 2.5 Flash
     - 役割: ファイナンシャルプランナーとして指示を生成
-    - 場所: ai/fp_agent.py
+    - 場所: ai/agents/fp_agent.py
     - API: app/src/app/api/agent/query/route.ts
     ↓
 [2] JSON Editor Agent（TypeScript/Gemini API）
@@ -174,9 +178,13 @@ app/src/app/
 └── [pages]/                    # Next.jsページ
 
 ai/
-├── fp_agent.py                 # Agent Engine定義
+├── config.py                   # GCP設定と環境変数
+├── deploy_agent.py             # 汎用エージェントデプロイスクリプト
 ├── test_agent.py               # エージェントテスト
-└── create_agent.temp.py        # エージェント作成スクリプト
+└── agents/                     # エージェント定義
+    ├── __init__.py
+    ├── fp_agent.py            # Financial Plannerエージェント定義
+    └── sample_agent.py        # サンプルエージェント定義
 
 cloud/
 ├── main.tf                     # Terraform設定、バックエンド状態管理

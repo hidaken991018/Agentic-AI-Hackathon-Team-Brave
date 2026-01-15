@@ -4,6 +4,7 @@
     "Agentic",
     "aiplatform",
     "cloudpickle",
+    "dotenv",
     "Firestore",
     "Hackathon",
     "mypy",
