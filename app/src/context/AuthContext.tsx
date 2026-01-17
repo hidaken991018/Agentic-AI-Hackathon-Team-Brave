@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-import { auth } from "../libs/firebase/firebase";
+import { auth } from "@/libs/firebase/firebase";
 
 const AuthContext = createContext<{ user: User | null; loading: boolean }>({
   user: null,

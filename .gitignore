@@ -3,3 +3,4 @@
 
 **/.venv/
 /.serena
+.claude/settings.local.json

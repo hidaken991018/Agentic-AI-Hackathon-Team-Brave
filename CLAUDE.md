@@ -57,8 +57,12 @@ cd ai
 # 依存関係のインストール（初回のみ）
 uv sync
 
-# Pythonスクリプトの実行
-uv run python <スクリプト名>.py
+# エージェントのデプロイ
+uv run python deploy_agent.py fp_agent        # FPエージェント
+uv run python deploy_agent.py sample_agent    # サンプルエージェント
+
+# エージェントのテスト
+uv run python test_agent.py
 
 # リントとフォーマット
 uv run ruff check .          # Lint
@@ -119,7 +123,7 @@ gcloud auth application-default revoke
 [1] FP Instructor Agent（Python/Vertex AI Agent Engine）
     - モデル: Gemini 2.5 Flash
     - 役割: ファイナンシャルプランナーとして指示を生成
-    - 場所: ai/fp_agent.py
+    - 場所: ai/agents/fp_agent.py
     - API: app/src/app/api/agent/query/route.ts
     ↓
 [2] JSON Editor Agent（TypeScript/Gemini API）
@@ -174,9 +178,13 @@ app/src/app/
 └── [pages]/                    # Next.jsページ
 
 ai/
-├── fp_agent.py                 # Agent Engine定義
+├── config.py                   # GCP設定と環境変数
+├── deploy_agent.py             # 汎用エージェントデプロイスクリプト
 ├── test_agent.py               # エージェントテスト
-└── create_agent.temp.py        # エージェント作成スクリプト
+└── agents/                     # エージェント定義
+    ├── __init__.py
+    ├── fp_agent.py            # Financial Plannerエージェント定義
+    └── sample_agent.py        # サンプルエージェント定義
 
 cloud/
 ├── main.tf                     # Terraform設定、バックエンド状態管理
@@ -198,3 +206,50 @@ TypeScript は`@/*`エイリアスを`./src/*`に使用（`app/tsconfig.json`で
 - ESLint と Prettier 統合（app/）
 - Ruff でリント/フォーマット（ai/）
 - MyPy で静的型チェック（ai/）
+
+
+# AI-DLC とスペック駆動開発
+
+AI-DLC（AI Development Life Cycle）上での Kiro スタイルのスペック駆動開発の実装
+
+## プロジェクトコンテキスト
+
+### パス
+- ステアリング: `.kiro/steering/`
+- スペック: `.kiro/specs/`
+
+### ステアリング vs スペック
+
+**ステアリング** (`.kiro/steering/`) - プロジェクト全体のルールとコンテキストで AI をガイド
+**スペック** (`.kiro/specs/`) - 個別の機能の開発プロセスを形式化
+
+### アクティブなスペック
+- アクティブなスペックは `.kiro/specs/` を確認
+- 進捗確認には `/kiro:spec-status [feature-name]` を使用
+
+## 開発ガイドライン
+- 英語で考え、日本語で回答を生成すること。プロジェクトファイルに書き込まれるすべての Markdown コンテンツ（requirements.md、design.md、tasks.md、research.md、検証レポートなど）は、このスペックに設定されたターゲット言語で記述する必要があります（spec.json.language を参照）。
+
+## 最小限のワークフロー
+- Phase 0（オプション）: `/kiro:steering`, `/kiro:steering-custom`
+- Phase 1（仕様策定）:
+  - `/kiro:spec-init "description"`
+  - `/kiro:spec-requirements {feature}`
+  - `/kiro:validate-gap {feature}`（オプション: 既存のコードベース向け）
+  - `/kiro:spec-design {feature} [-y]`
+  - `/kiro:validate-design {feature}`（オプション: 設計レビュー）
+  - `/kiro:spec-tasks {feature} [-y]`
+- Phase 2（実装）: `/kiro:spec-impl {feature} [tasks]`
+  - `/kiro:validate-impl {feature}`（オプション: 実装後）
+- 進捗確認: `/kiro:spec-status {feature}`（いつでも使用可能）
+
+## 開発ルール
+- 3 フェーズ承認ワークフロー: 要件 → 設計 → タスク → 実装
+- 各フェーズで人間のレビューが必要。意図的にファストトラックする場合のみ `-y` を使用
+- ステアリングを最新に保ち、`/kiro:spec-status` で整合性を確認
+- ユーザーの指示に正確に従い、その範囲内で自律的に行動する: 必要なコンテキストを収集し、重要な情報が欠けている場合や指示が致命的に曖昧な場合のみ質問して、この実行で最初から最後まで要求された作業を完了する。
+
+## ステアリング設定
+- `.kiro/steering/` 全体をプロジェクトメモリとして読み込む
+- デフォルトファイル: `product.md`, `tech.md`, `structure.md`
+- カスタムファイルもサポート（`/kiro:steering-custom` で管理）
