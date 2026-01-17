@@ -14,7 +14,7 @@
 - **Language**: TypeScript（strict mode 有効）
 - **Framework**: Next.js 16.1.1 + React 19.2.3
 - **Runtime**: Node.js 24.12.0（Volta で管理）
-- **Styling**: Tailwind CSS 4
+- **Styling**: Tailwind CSS 4（tw-animate-css でアニメーション拡張）
 - **UI Components**: Radix UI + shadcn/ui パターン
 - **Database**: Firestore + PostgreSQL 15（Cloud SQL）
 
@@ -31,10 +31,10 @@
 
 ## Key Libraries
 
-- **Authentication**: Firebase Authentication
+- **Authentication**: Firebase Authentication (firebase@12.7.0)
 - **AI Integration**: @google/genai（Gemini API）, Vertex AI SDK
 - **Validation**: Zod 4.x（スキーマ定義とランタイム検証）
-- **Styling Utilities**: clsx, tailwind-merge（条件付きクラス）
+- **Styling Utilities**: clsx, tailwind-merge（条件付きクラス）, class-variance-authority（バリアント管理）
 - **Icons**: lucide-react
 
 ## Development Standards
@@ -110,3 +110,4 @@ import { fpInstructor } from "../../agents/fpInstructor"  // ❌ Avoid
 
 ---
 _created_at: 2026-01-16_
+_updated_at: 2026-01-17_
