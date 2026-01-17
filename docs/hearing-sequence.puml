@@ -78,7 +78,7 @@ loop 追加質問フェーズ (max 3回/)
 
     Agent -> LLM : 構造化出力生成\n(追加質問生成指示)
     activate LLM
-    LLM --> Agent : 不整合/不足情報に関する追加質問リスト
+    LLM --> Agent : 
     deactivate LLM
     Agent -> Sessions : セッション状態更新\n(質問回数+1)
     Agent --> Backend : 追加質問リスト
