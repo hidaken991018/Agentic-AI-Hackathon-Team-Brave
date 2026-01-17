@@ -42,26 +42,6 @@ end
 Agent --> Backend : session_id, 初期状態
 deactivate Agent
 
-== セッション復元（途中再開） ==
-Backend -> Agent : セッション復元要求(user_id)
-activate Agent
-
-Agent -> Sessions : 進行中セッション検索(user_id)
-activate Sessions
-Sessions --> Agent : 既存セッション一覧
-deactivate Sessions
-
-alt 進行中セッションあり
-  Agent -> Sessions : セッション状態取得(session_id)
-  activate Sessions
-  Sessions --> Agent : 保存済み状態\n(last_screen, 入力済みデータ)
-  deactivate Sessions
-  Agent --> Backend : session_id, 復元状態, 再開画面
-else 進行中セッションなし
-  Agent --> Backend : セッションなし\n→ 新規セッション開始へ
-end
-deactivate Agent
-
 == 定量データ受信 ==
 Backend -> Agent : 定量データ送信(session_id, data)
 activate Agent
@@ -77,36 +57,46 @@ deactivate Agent
 == 定性データ受信（自由記述/価値観/感情） ==
 Backend -> Agent : 定性データ送信\n(session_id, content)
 activate Agent
-
-Agent -> Sessions : 物価上昇率や収入成長率を算出
-activate Sessions
-Sessions --> Agent : 
-deactivate Sessions
+Agent -> Agent:  物価上昇率や収入成長率を算出
+Agent -> LLM : 構造化出力生成
+activate LLM
+LLM --> Agent : 
+deactivate LLM
 
 Agent --> Backend : 受信確認
 deactivate Agent
 
-== 入力終了・追加質問判定 ==
-Backend -> Agent : ヒアリング完了要求(session_id)
-activate Agent
+== 追加質問判定 ==
+loop 追加質問フェーズ (max 3回/)
+
+  Backend -> Agent : 追加質問要求(session_id)
+  activate Agent
+
+  Agent -> Agent: 整合性・不足情報チェック
+
+  alt  整合性・不足情報チェックNG
+
+    Agent -> LLM : 構造化出力生成\n(追加質問生成指示)
+    activate LLM
+    LLM --> Agent : 不整合/不足情報に関する追加質問リスト
+    deactivate LLM
+    Agent -> Sessions : セッション状態更新\n(質問回数+1)
+    Agent --> Backend : 追加質問リスト
 
 
-Agent -> LLM : 構造化出力生成\n(完了判定 + 追加質問生成指示)
-activate LLM
-LLM --> Agent : 完了判定結果JSON\n(is_complete, 不足点, 追加質問)
-deactivate LLM
 
-alt 未完了 かつ 質問回数 < 3
-  Agent -> Sessions : セッション状態更新\n(質問回数+1, last_screen更新)
-  Agent --> Backend : 追加質問リスト
-  
-
-  
-else 完了 または 質問回数 >= 3
-  Agent -> Agent : ヒアリングJSON作成へ
-end
+  else 整合性・不足情報チェックOK
+    Agent --> Backend : 追加質問なし（ヒアリング完了通知）
+    deactivate Agent
+    Backend -> Backend: break loop
+    
+  end
+end 
 
 == ヒアリングJSON作成・永続化 ==
+Backend -> Agent : ヒアリングJSON作成(session_id)
+activate Agent
+Agent -> Agent: ヒアリングJSON作成指示生成
 Agent -> LLM : 構造化出力生成\n(最終JSON整形指示)
 activate LLM
 LLM --> Agent : ヒアリングJSON
