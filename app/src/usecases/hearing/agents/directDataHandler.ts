@@ -11,10 +11,8 @@ import { NextResponse } from "next/server";
 
 import {
   createErrorNextResponse,
-  handleServiceError,
   handleSessionError,
 } from "@/libs/common/errorHandler";
-import { withRetry } from "@/libs/common/retryUtility";
 import {
   createSession,
   updateSessionData,
@@ -83,22 +81,14 @@ export async function handleDirectData(
     sessionId = createResult.value;
   }
 
-  // 2. リトライ機能付きでセッションに直接データを保存
-  const storeResult = await withRetry(
-    async () => {
-      const result = await updateSessionData(sessionId, request.data);
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.value;
-    },
-    { maxRetries: 2, initialDelayMs: 1000, backoffMultiplier: 2 },
-  );
-
+  // 2. セッションに直接データを保存（リトライは axiosClient で一元管理）
+  const storeResult = await updateSessionData(sessionId, request.data);
   if (!storeResult.ok) {
+    const errorType =
+      storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      response: handleServiceError("agent", storeResult.error.lastError),
+      response: handleSessionError(errorType),
     };
   }
 

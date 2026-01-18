@@ -1,21 +1,48 @@
 /**
  * axios 共通クライアント
  *
- * タイムアウト設定とレスポンス時間のログ出力を一元管理します。
+ * タイムアウト設定、レスポンス時間のログ出力、リトライ機能を一元管理します。
  *
  * @module axiosClient
  */
 
 import axios from "axios";
+import axiosRetry from "axios-retry";
 
 /** デフォルトタイムアウト（ミリ秒） */
 const DEFAULT_TIMEOUT_MS = 120 * 1000;
+
+/** リトライ回数 */
+const RETRY_COUNT = 2;
 
 /** axios インスタンス */
 export const axiosClient = axios.create({
   timeout: DEFAULT_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
+  },
+});
+
+/**
+ * リトライ設定
+ * - ネットワークエラーまたは 5xx エラーでリトライ
+ * - 指数バックオフを使用
+ */
+axiosRetry(axiosClient, {
+  retries: RETRY_COUNT,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    // ネットワークエラーまたは 5xx エラーでリトライ
+    return (
+      axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+      (error.response?.status ?? 0) >= 500
+    );
+  },
+  onRetry: (retryCount, error, requestConfig) => {
+    console.warn(
+      `[axios] リトライ ${retryCount}/${RETRY_COUNT}: ${requestConfig.url}`,
+      error.message,
+    );
   },
 });
 
