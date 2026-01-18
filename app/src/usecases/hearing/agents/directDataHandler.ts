@@ -13,7 +13,6 @@ import {
   createErrorNextResponse,
   handleServiceError,
   handleSessionError,
-  handleValidationError,
 } from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import {
@@ -22,7 +21,6 @@ import {
   validateSession,
 } from "@/libs/google/sessionManager";
 import {
-  directDataRequestSchema,
   directDataResponseSchema,
   type DirectDataRequest,
   type DirectDataResponse,
@@ -42,29 +40,17 @@ type HandlerResult =
  * 直接データ受信のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. Zodスキーマでリクエストボディを検証
- * 2. sessionIdが指定されていない場合は新規セッションを作成、指定されている場合は既存セッションを検証
- * 3. リトライ機能付きでAgent Engine Sessionsに直接データを保存
- * 4. sessionIdとタイムスタンプを含む成功レスポンスを返却
+ * 1. sessionIdが指定されていない場合は新規セッションを作成、指定されている場合は既存セッションを検証
+ * 2. リトライ機能付きでAgent Engine Sessionsに直接データを保存
+ * 3. sessionIdとタイムスタンプを含む成功レスポンスを返却
  *
- * @param requestBody - 検証前のリクエストボディ
+ * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功/失敗とレスポンス）
  */
 export async function handleDirectData(
-  requestBody: unknown,
+  request: DirectDataRequest,
 ): Promise<HandlerResult> {
-  // 1. リクエストボディの検証
-  const parseResult = directDataRequestSchema.safeParse(requestBody);
-  if (!parseResult.success) {
-    return {
-      success: false,
-      response: handleValidationError(parseResult.error),
-    };
-  }
-
-  const request: DirectDataRequest = parseResult.data;
-
-  // 2. セッション処理: 新規作成または既存の検証
+  // 1. セッション処理: 新規作成または既存の検証
   let sessionId: string;
 
   if (request.sessionId) {
@@ -97,7 +83,7 @@ export async function handleDirectData(
     sessionId = createResult.value;
   }
 
-  // 3. リトライ機能付きでセッションに直接データを保存
+  // 2. リトライ機能付きでセッションに直接データを保存
   const storeResult = await withRetry(
     async () => {
       const result = await updateSessionData(sessionId, request.data);
@@ -116,7 +102,7 @@ export async function handleDirectData(
     };
   }
 
-  // 4. 成功レスポンスの構築
+  // 3. 成功レスポンスの構築
   const storedAt = new Date().toISOString();
   const responseData: DirectDataResponse = {
     success: true,

@@ -13,7 +13,6 @@ import {
   createErrorNextResponse,
   handleServiceError,
   handleSessionError,
-  handleValidationError,
 } from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import { queryGemini } from "@/libs/google/queryGemini";
@@ -24,7 +23,6 @@ import {
 import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
 import {
   DEFAULT_ESTIMATION_TARGETS,
-  interpretedDataRequestSchema,
   interpretedDataResponseSchema,
   type Estimation,
   type InterpretedDataRequest,
@@ -167,31 +165,19 @@ function parseGeminiResponse(responseText: string): {
  * 解釈データ処理のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. Zodスキーマでリクエストボディを検証（文字数制限を含む）
- * 2. 既存セッションを検証
- * 3. 推定対象が指定されていない場合はデフォルト値を適用
- * 4. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
- * 5. 構造化データをセッションに保存
- * 6. structuredDataとestimationsを含む成功レスポンスを返却
+ * 1. 既存セッションを検証
+ * 2. 推定対象が指定されていない場合はデフォルト値を適用
+ * 3. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
+ * 4. 構造化データをセッションに保存
+ * 5. structuredDataとestimationsを含む成功レスポンスを返却
  *
- * @param requestBody - 検証前のリクエストボディ
+ * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功/失敗とレスポンス）
  */
 export async function handleInterpretedData(
-  requestBody: unknown,
+  request: InterpretedDataRequest,
 ): Promise<HandlerResult> {
-  // 1. リクエストボディの検証
-  const parseResult = interpretedDataRequestSchema.safeParse(requestBody);
-  if (!parseResult.success) {
-    return {
-      success: false,
-      response: handleValidationError(parseResult.error),
-    };
-  }
-
-  const request: InterpretedDataRequest = parseResult.data;
-
-  // 2. 既存セッションの検証（解釈データにはsessionIdが必須）
+  // 1. 既存セッションの検証（解釈データにはsessionIdが必須）
   const validationResult = await validateSession(request.sessionId);
   if (!validationResult.ok) {
     const errorType =
@@ -205,13 +191,13 @@ export async function handleInterpretedData(
   }
   const sessionId = validationResult.value.id;
 
-  // 3. 推定対象が指定されていない場合はデフォルト値を適用
+  // 2. 推定対象が指定されていない場合はデフォルト値を適用
   const estimationTargets: string[] =
     request.estimationTargets && request.estimationTargets.length > 0
       ? request.estimationTargets
       : [...DEFAULT_ESTIMATION_TARGETS];
 
-  // 4. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
+  // 3. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
   const prompt = buildInterpretationPrompt(
     request.content,
     estimationTargets,
@@ -243,7 +229,7 @@ export async function handleInterpretedData(
 
   const { structuredData, estimations } = geminiResult.value;
 
-  // 5. リトライ機能付きでセッションに構造化データを保存
+  // 4. リトライ機能付きでセッションに構造化データを保存
   const storeResult = await withRetry(
     async () => {
       const result = await updateSessionData(sessionId, {
@@ -266,7 +252,7 @@ export async function handleInterpretedData(
     };
   }
 
-  // 6. 成功レスポンスの構築
+  // 5. 成功レスポンスの構築
   const processedAt = new Date().toISOString();
   const responseData: InterpretedDataResponse = {
     success: true,

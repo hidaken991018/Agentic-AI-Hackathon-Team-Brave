@@ -10,18 +10,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-import { handleInternalError } from "@/libs/common/errorHandler";
+import {
+  handleInternalError,
+  handleValidationError,
+} from "@/libs/common/errorHandler";
 import {
   addCorsHeaders,
   handlePreflight,
   withAuth,
 } from "@/middleware/authMiddleware";
 import { handleAdditionalQuestions } from "@/usecases/hearing/agents/additionalQuestionsHandler";
+import { additionalQuestionsRequestSchema } from "@/usecases/hearing/schema/additionalQuestionsSchema";
 
 export const runtime = "nodejs";
-
-/** リクエストタイムアウト: 30秒 */
-const REQUEST_TIMEOUT_MS = 30000;
 
 /**
  * CORSプリフライトリクエストを処理します
@@ -52,53 +53,33 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
  * @returns 処理結果を含むレスポンス
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const startTime = Date.now();
   const origin = request.headers.get("origin");
 
+  // 1. 認証チェック
+  const authResult = await withAuth(request);
+  if (!authResult.authenticated) {
+    return addCorsHeaders(authResult.response, origin);
+  }
+
+  // 2. リクエストボディの解析
+  let rawBody: unknown;
   try {
-    // 1. 認証チェック
-    const authResult = await withAuth(request);
-    if (!authResult.authenticated) {
-      return addCorsHeaders(authResult.response, origin);
-    }
-
-    // 2. タイムアウト付きでリクエストボディを解析
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
-        () => reject(new Error("Request timeout")),
-        REQUEST_TIMEOUT_MS,
-      );
-    });
-
-    const bodyPromise = request.json();
-    const requestBody = await Promise.race([bodyPromise, timeoutPromise]);
-
-    // 3. ビジネスロジックを実行
-    const result = await handleAdditionalQuestions(requestBody);
-
-    // 4. レスポンス時間をログ出力
-    const responseTime = Date.now() - startTime;
-    console.log(`[AdditionalQuestionsAPI] レスポンス時間: ${responseTime}ms`);
-
-    // 5. CORSヘッダー付きでレスポンスを返却
-    return addCorsHeaders(result.response, origin);
-  } catch (error) {
-    // タイムアウトエラーの処理
-    if (error instanceof Error && error.message === "Request timeout") {
-      const response = handleInternalError(
-        `リクエストタイムアウト（${REQUEST_TIMEOUT_MS / 1000}秒を超過しました）`,
-      );
-      return addCorsHeaders(response, origin);
-    }
-
-    // JSONパースエラーの処理
-    if (error instanceof SyntaxError) {
-      const response = handleInternalError("リクエストボディのJSONが不正です");
-      return addCorsHeaders(response, origin);
-    }
-
-    // その他のエラーの処理
-    const response = handleInternalError(error);
+    rawBody = await request.json();
+  } catch {
+    const response = handleInternalError("リクエストボディのJSONが不正です");
     return addCorsHeaders(response, origin);
   }
+
+  // 3. リクエストボディのバリデーション
+  const parseResult = additionalQuestionsRequestSchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    const response = handleValidationError(parseResult.error);
+    return addCorsHeaders(response, origin);
+  }
+
+  // 4. ビジネスロジックを実行
+  const result = await handleAdditionalQuestions(parseResult.data);
+
+  // 5. CORSヘッダー付きでレスポンスを返却
+  return addCorsHeaders(result.response, origin);
 }

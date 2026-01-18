@@ -15,12 +15,10 @@ import {
   createErrorNextResponse,
   handleServiceError,
   handleSessionError,
-  handleValidationError,
 } from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import { validateSession } from "@/libs/google/sessionManager";
 import {
-  additionalQuestionsRequestSchema,
   additionalQuestionsResponseSchema,
   type AdditionalQuestionsRequest,
   type AdditionalQuestionsResponse,
@@ -203,32 +201,20 @@ function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
  * 追加質問生成のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. Zodスキーマでリクエストボディを検証
- * 2. 既存セッションを検証
- * 3. 質問回数が最大値を超えているかチェック（超えている場合は強制完了）
- * 4. Agent Engineにデータの整合性/十分性チェックをリクエスト
- * 5. データが十分な場合はhearing_completedを返却
- * 6. データが不十分または矛盾がある場合はGeminiで質問を生成
- * 7. 生成された質問と共にadditional_questions_requiredを返却
+ * 1. 既存セッションを検証
+ * 2. 質問回数が最大値を超えているかチェック（超えている場合は強制完了）
+ * 3. Agent Engineにデータの整合性/十分性チェックをリクエスト
+ * 4. データが十分な場合はhearing_completedを返却
+ * 5. データが不十分または矛盾がある場合はGeminiで質問を生成
+ * 6. 生成された質問と共にadditional_questions_requiredを返却
  *
- * @param requestBody - 検証前のリクエストボディ
+ * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功/失敗とレスポンス）
  */
 export async function handleAdditionalQuestions(
-  requestBody: unknown,
+  request: AdditionalQuestionsRequest,
 ): Promise<HandlerResult> {
-  // 1. リクエストボディの検証
-  const parseResult = additionalQuestionsRequestSchema.safeParse(requestBody);
-  if (!parseResult.success) {
-    return {
-      success: false,
-      response: handleValidationError(parseResult.error),
-    };
-  }
-
-  const request: AdditionalQuestionsRequest = parseResult.data;
-
-  // 2. 既存セッションの検証
+  // 1. 既存セッションの検証
   const validationResult = await validateSession(request.sessionId);
   if (!validationResult.ok) {
     const errorType =
@@ -241,7 +227,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 3. 質問回数が最大値を超えているかチェック - 強制完了
+  // 2. 質問回数が最大値を超えているかチェック - 強制完了
   const currentQuestionCount = request.questionCount;
   if (currentQuestionCount >= MAX_QUESTION_ROUNDS) {
     console.log(
@@ -275,7 +261,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 4. Agent Engineでデータの整合性/十分性をチェック
+  // 3. Agent Engineでデータの整合性/十分性をチェック
   const consistencyResult = await withRetry(
     async () => {
       const result = await checkDataConsistency(request.sessionId);
@@ -293,7 +279,7 @@ export async function handleAdditionalQuestions(
 
   const consistencyData = consistencyResult.value;
 
-  // 5. データが十分かつ整合性がある場合はhearing_completedを返却
+  // 4. データが十分かつ整合性がある場合はhearing_completedを返却
   if (consistencyData.isSufficient && consistencyData.isConsistent) {
     console.log(
       "[AdditionalQuestionsHandler] データが十分かつ整合性があります。ヒアリングを完了します。",
@@ -326,7 +312,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 6. Gemini APIで追加質問を生成（リトライ機能付き）
+  // 5. Gemini APIで追加質問を生成（リトライ機能付き）
   const questionGenerationResult = await withRetry(
     async () => {
       const rawQuestions = await generateQuestionsWithGemini(consistencyData);
@@ -345,7 +331,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 7. 生成された質問をQuestionスキーマ形式に変換
+  // 6. 生成された質問をQuestionスキーマ形式に変換
   const questions = convertToQuestions(questionGenerationResult.value);
   const newQuestionCount = currentQuestionCount + 1;
 
