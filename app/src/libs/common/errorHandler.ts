@@ -15,7 +15,7 @@ import {
   ERROR_STATUS_MAP,
   ErrorCode,
   type ErrorResponse,
-} from "@/usecases/hearing/schema/errorSchema";
+} from "@/services/hearing/schema/errorSchema";
 
 import type { z } from "zod";
 

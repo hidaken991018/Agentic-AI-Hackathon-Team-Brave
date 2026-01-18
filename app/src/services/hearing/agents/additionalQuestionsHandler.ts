@@ -24,8 +24,8 @@ import {
   type AdditionalQuestionsResponse,
   type AnswerMethod,
   type Question,
-} from "@/usecases/hearing/schema/additionalQuestionsSchema";
-import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+} from "@/services/hearing/schema/additionalQuestionsSchema";
+import { ErrorCode } from "@/services/hearing/schema/errorSchema";
 
 /**
  * 質問ラウンドの最大回数
@@ -122,9 +122,7 @@ async function generateQuestionsWithGemini(
   consistencyResult: ConsistencyCheckResult,
 ): Promise<RawGeneratedQuestion[]> {
   // TODO: 実際のGemini API呼び出しに置き換える
-  console.log(
-    "[AdditionalQuestionsHandler] Gemini APIで質問を生成中",
-  );
+  console.log("[AdditionalQuestionsHandler] Gemini APIで質問を生成中");
 
   // モック実装 - 欠落フィールドに基づいて質問を生成
   const questions: RawGeneratedQuestion[] = [];

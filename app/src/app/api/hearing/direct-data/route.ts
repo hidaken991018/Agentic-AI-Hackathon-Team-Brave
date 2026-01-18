@@ -20,12 +20,12 @@ import {
   handlePreflight,
   withAuth,
 } from "@/middleware/authMiddleware";
-import { handleDirectData } from "@/usecases/hearing/agents/directDataHandler";
+import { handleDirectData } from "@/services/hearing/agents/directDataHandler";
 import {
   directDataRequestSchema,
   directDataResponseSchema,
-} from "@/usecases/hearing/schema/directDataSchema";
-import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+} from "@/services/hearing/schema/directDataSchema";
+import { ErrorCode } from "@/services/hearing/schema/errorSchema";
 
 export const runtime = "nodejs";
 

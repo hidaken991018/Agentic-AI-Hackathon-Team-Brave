@@ -15,7 +15,7 @@ import {
 import {
   type DirectDataRequest,
   type DirectDataResponse,
-} from "@/usecases/hearing/schema/directDataSchema";
+} from "@/services/hearing/schema/directDataSchema";
 
 /**
  * ハンドラーエラーの型定義

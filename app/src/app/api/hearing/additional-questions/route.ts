@@ -19,8 +19,8 @@ import {
   handlePreflight,
   withAuth,
 } from "@/middleware/authMiddleware";
-import { handleAdditionalQuestions } from "@/usecases/hearing/agents/additionalQuestionsHandler";
-import { additionalQuestionsRequestSchema } from "@/usecases/hearing/schema/additionalQuestionsSchema";
+import { handleAdditionalQuestions } from "@/services/hearing/agents/additionalQuestionsHandler";
+import { additionalQuestionsRequestSchema } from "@/services/hearing/schema/additionalQuestionsSchema";
 
 export const runtime = "nodejs";
 

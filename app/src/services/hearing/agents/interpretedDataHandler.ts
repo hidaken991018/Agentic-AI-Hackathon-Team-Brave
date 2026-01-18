@@ -19,7 +19,7 @@ import {
   type InterpretedDataRequest,
   type InterpretedDataResponse,
   type JsonSchema,
-} from "@/usecases/hearing/schema/interpretedDataSchema";
+} from "@/services/hearing/schema/interpretedDataSchema";
 
 /**
  * ハンドラーエラーの型定義

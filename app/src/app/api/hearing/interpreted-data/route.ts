@@ -20,12 +20,12 @@ import {
   handlePreflight,
   withAuth,
 } from "@/middleware/authMiddleware";
-import { handleInterpretedData } from "@/usecases/hearing/agents/interpretedDataHandler";
-import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+import { handleInterpretedData } from "@/services/hearing/agents/interpretedDataHandler";
+import { ErrorCode } from "@/services/hearing/schema/errorSchema";
 import {
   interpretedDataRequestSchema,
   interpretedDataResponseSchema,
-} from "@/usecases/hearing/schema/interpretedDataSchema";
+} from "@/services/hearing/schema/interpretedDataSchema";
 
 export const runtime = "nodejs";
 
@@ -96,7 +96,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         errorResponse = handleSessionError(result.error.errorType);
         break;
       case "gemini":
-        errorResponse = handleServiceError("gemini", result.error.originalError);
+        errorResponse = handleServiceError(
+          "gemini",
+          result.error.originalError,
+        );
         break;
       case "service":
         errorResponse = createErrorNextResponse({
