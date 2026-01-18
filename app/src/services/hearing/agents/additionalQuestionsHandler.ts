@@ -9,23 +9,14 @@
 
 import { randomUUID } from "crypto";
 
-import { NextResponse } from "next/server";
-
-import {
-  createErrorNextResponse,
-  handleServiceError,
-  handleSessionError,
-} from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import { validateSession } from "@/libs/google/sessionManager";
 import {
-  additionalQuestionsResponseSchema,
   type AdditionalQuestionsRequest,
   type AdditionalQuestionsResponse,
   type AnswerMethod,
   type Question,
 } from "@/services/hearing/schema/additionalQuestionsSchema";
-import { ErrorCode } from "@/services/hearing/schema/errorSchema";
 
 /**
  * 質問ラウンドの最大回数
@@ -33,13 +24,23 @@ import { ErrorCode } from "@/services/hearing/schema/errorSchema";
 const MAX_QUESTION_ROUNDS = 3;
 
 /**
+ * ハンドラーエラーの型定義
+ *
+ * セッション関連エラー、Agent Engineエラー、Geminiエラーを区別する
+ */
+export type AdditionalQuestionsHandlerError =
+  | { type: "session"; errorType: "expired" | "not_found" }
+  | { type: "agent"; originalError: unknown }
+  | { type: "gemini"; originalError: unknown };
+
+/**
  * ハンドラー操作の結果型
  *
- * 成功時はAdditionalQuestionsResponseを含むNextResponse、失敗時はエラーレスポンスを返す
+ * 成功時はAdditionalQuestionsResponseを返し、失敗時はエラー情報を返す
  */
-type HandlerResult =
-  | { success: true; response: NextResponse<AdditionalQuestionsResponse> }
-  | { success: false; response: NextResponse };
+export type AdditionalQuestionsHandlerResult =
+  | { success: true; data: AdditionalQuestionsResponse }
+  | { success: false; error: AdditionalQuestionsHandlerError };
 
 /**
  * Agent Engineからのデータ整合性チェック結果
@@ -207,11 +208,11 @@ function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
  * 6. 生成された質問と共にadditional_questions_requiredを返却
  *
  * @param request - 検証済みのリクエストボディ
- * @returns ハンドラー処理結果（成功/失敗とレスポンス）
+ * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleAdditionalQuestions(
   request: AdditionalQuestionsRequest,
-): Promise<HandlerResult> {
+): Promise<AdditionalQuestionsHandlerResult> {
   // 1. 既存セッションの検証
   const validationResult = await validateSession(request.sessionId);
   if (!validationResult.ok) {
@@ -221,7 +222,7 @@ export async function handleAdditionalQuestions(
         : "not_found";
     return {
       success: false,
-      response: handleSessionError(errorType),
+      error: { type: "session", errorType },
     };
   }
 
@@ -237,25 +238,9 @@ export async function handleAdditionalQuestions(
       questionCount: currentQuestionCount,
     };
 
-    const responseValidation =
-      additionalQuestionsResponseSchema.safeParse(responseData);
-    if (!responseValidation.success) {
-      console.error(
-        "[AdditionalQuestionsHandler] レスポンス検証に失敗しました:",
-        responseValidation.error,
-      );
-      return {
-        success: false,
-        response: createErrorNextResponse({
-          code: ErrorCode.INTERNAL_ERROR,
-          message: "レスポンスの生成に失敗しました",
-        }),
-      };
-    }
-
     return {
       success: true,
-      response: NextResponse.json(responseValidation.data, { status: 200 }),
+      data: responseData,
     };
   }
 
@@ -271,7 +256,7 @@ export async function handleAdditionalQuestions(
   if (!consistencyResult.ok) {
     return {
       success: false,
-      response: handleServiceError("agent", consistencyResult.error.lastError),
+      error: { type: "agent", originalError: consistencyResult.error.lastError },
     };
   }
 
@@ -288,25 +273,9 @@ export async function handleAdditionalQuestions(
       questionCount: currentQuestionCount,
     };
 
-    const responseValidation =
-      additionalQuestionsResponseSchema.safeParse(responseData);
-    if (!responseValidation.success) {
-      console.error(
-        "[AdditionalQuestionsHandler] レスポンス検証に失敗しました:",
-        responseValidation.error,
-      );
-      return {
-        success: false,
-        response: createErrorNextResponse({
-          code: ErrorCode.INTERNAL_ERROR,
-          message: "レスポンスの生成に失敗しました",
-        }),
-      };
-    }
-
     return {
       success: true,
-      response: NextResponse.json(responseValidation.data, { status: 200 }),
+      data: responseData,
     };
   }
 
@@ -322,10 +291,10 @@ export async function handleAdditionalQuestions(
   if (!questionGenerationResult.ok) {
     return {
       success: false,
-      response: handleServiceError(
-        "gemini",
-        questionGenerationResult.error.lastError,
-      ),
+      error: {
+        type: "gemini",
+        originalError: questionGenerationResult.error.lastError,
+      },
     };
   }
 
@@ -333,32 +302,15 @@ export async function handleAdditionalQuestions(
   const questions = convertToQuestions(questionGenerationResult.value);
   const newQuestionCount = currentQuestionCount + 1;
 
-  // レスポンスの構築
+  // レスポンスデータの構築
   const responseData: AdditionalQuestionsResponse = {
     status: "additional_questions_required",
     questions,
     questionCount: newQuestionCount,
   };
 
-  // レスポンスの検証
-  const responseValidation =
-    additionalQuestionsResponseSchema.safeParse(responseData);
-  if (!responseValidation.success) {
-    console.error(
-      "[AdditionalQuestionsHandler] レスポンス検証に失敗しました:",
-      responseValidation.error,
-    );
-    return {
-      success: false,
-      response: createErrorNextResponse({
-        code: ErrorCode.INTERNAL_ERROR,
-        message: "レスポンスの生成に失敗しました",
-      }),
-    };
-  }
-
   return {
     success: true,
-    response: NextResponse.json(responseValidation.data, { status: 200 }),
+    data: responseData,
   };
 }
