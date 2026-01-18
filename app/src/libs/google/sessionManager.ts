@@ -290,7 +290,10 @@ export async function validateSession(
 /**
  * セッションデータを更新（直接データ・解釈データの保存）
  *
- * @param sessionId - 更新対象のセッション ID
+ * 注意: この関数を呼び出す前に、呼び出し元で validateSession を実行してください。
+ *       二重検証を避けるため、この関数内では validateSession を呼び出しません。
+ *
+ * @param sessionId - 更新対象のセッション ID（呼び出し元で検証済みであること）
  * @param data - 保存するデータ
  * @returns 成功時は void、失敗時はエラー
  */
@@ -298,12 +301,6 @@ export async function updateSessionData(
   sessionId: string,
   data: unknown,
 ): Promise<Result<void, SessionError>> {
-  // まずセッションの存在と有効期限を検証
-  const validationResult = await validateSession(sessionId);
-  if (!validationResult.ok) {
-    return validationResult;
-  }
-
   const LOCATION = process.env.VERTEX_AGT_LOCATION!;
   const RESOURCE_NAME = process.env.VERTEX_AGT_RESOURCE_NAME!;
 

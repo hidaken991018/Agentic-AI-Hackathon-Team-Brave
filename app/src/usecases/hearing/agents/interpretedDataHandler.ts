@@ -16,10 +16,7 @@ import {
 } from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import { queryGemini } from "@/libs/google/queryGemini";
-import {
-  updateSessionData,
-  validateSession,
-} from "@/libs/google/sessionManager";
+import { updateSessionData, validateSession } from "@/libs/google/sessionManager";
 import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
 import {
   DEFAULT_ESTIMATION_TARGETS,
@@ -229,26 +226,19 @@ export async function handleInterpretedData(
 
   const { structuredData, estimations } = geminiResult.value;
 
-  // 4. リトライ機能付きでセッションに構造化データを保存
-  const storeResult = await withRetry(
-    async () => {
-      const result = await updateSessionData(sessionId, {
-        interpretedData: structuredData,
-        estimations,
-        processedAt: new Date().toISOString(),
-      });
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-      return result.value;
-    },
-    { maxRetries: 2, initialDelayMs: 1000, backoffMultiplier: 2 },
-  );
+  // 4. セッションに構造化データを保存（リトライは axiosClient で一元管理）
+  const storeResult = await updateSessionData(sessionId, {
+    interpretedData: structuredData,
+    estimations,
+    processedAt: new Date().toISOString(),
+  });
 
   if (!storeResult.ok) {
+    const errorType =
+      storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      response: handleServiceError("agent", storeResult.error.lastError),
+      response: handleSessionError(errorType),
     };
   }
 
