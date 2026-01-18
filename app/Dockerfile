@@ -7,7 +7,19 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# 2. ビルドの実行
+# 2. ビルド引数の定義（GitHub Actionsから渡される値を受け取る）
+ARG NEXT_PUBLIC_FIREBASE_API_KEY
+ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ARG NEXT_PUBLIC_FIREBASE_APP_ID
+
+# 3. 環境変数としてセット（Next.jsのビルドプロセスがこれを参照する）
+ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
+ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
+
+# 4. ビルドの実行
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -15,7 +27,7 @@ COPY . .
 # Next.js のビルドを実行
 RUN npm run build
 
-# 3. 実行用イメージの作成
+# 5. 実行用イメージの作成
 FROM base AS runner
 WORKDIR /app
 
