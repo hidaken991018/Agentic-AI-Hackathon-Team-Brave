@@ -15,6 +15,9 @@
 - `app/hearing/page.tsx` - ヒアリングページ
 - `app/compass/page.tsx` - コンパス（結果表示）ページ
 - `app/login/page.tsx` - ログインページ
+- `app/quiz/page.tsx` - クイズページ
+- `app/design-system/page.tsx` - デザインシステム確認用ページ（開発用）
+- `app/poc-query-ai/page.tsx`, `app/auth-sample/page.tsx` - 検証用サンプルページ
 
 #### API Routes (`app/src/app/api/`)
 **Location**: `app/src/app/api/[endpoint]/route.ts`
@@ -41,7 +44,7 @@
 **Location**: `app/src/components/[category]/`
 **Purpose**: 再利用可能な UI コンポーネント
 **Example**:
-- `components/ui/` - Button, Input, Card など shadcn/ui ベースの UI プリミティブ
+- `components/ui/` - Button, Input, Card, Select, RadioGroup, Textarea など shadcn/ui ベースの UI プリミティブ
 - `components/auth/AuthGuard.tsx` - 認証ガードコンポーネント
 
 #### Schema (`app/src/schema/`)
@@ -122,3 +125,4 @@ import { AuthGuard } from "./AuthGuard"
 
 ---
 _created_at: 2026-01-16_
+_updated_at: 2026-01-17_
