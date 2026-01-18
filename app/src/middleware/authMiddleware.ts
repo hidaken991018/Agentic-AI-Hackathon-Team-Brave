@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { handleAuthError } from "@/libs/common/errorHandler";
+import { getAdminAuth } from "@/libs/firebase/admin";
 
 /**
  * CORS 許可オリジン設定
@@ -23,54 +24,19 @@ const ALLOWED_ORIGINS = [
 /**
  * Firebase Authentication トークンを検証
  *
- * 匿名認証の場合もトークン構造と有効期限を検証します。
- * Firebase Admin SDK を使用しないクライアントサイドデコード方式。
+ * Firebase Admin SDK を使用してトークンを検証します。
+ * 匿名認証を含むすべてのプロバイダをサポートします。
  *
  * @param token - JWT トークン文字列
  * @returns 有効な場合 true、無効な場合 false
  */
 async function validateFirebaseToken(token: string): Promise<boolean> {
   try {
-    // JWT トークンをデコード（base64url）
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      console.warn("[Auth] トークン形式が無効: 3パートが必要です");
-      return false;
-    }
-
-    // ペイロードをデコード
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf-8"),
-    );
-
-    // 有効期限をチェック
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      console.warn("[Auth] トークンの有効期限切れ");
-      return false;
-    }
-
-    // 発行者（Firebase プロジェクト）をチェック
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const expectedIssuer = `https://securetoken.google.com/${projectId}`;
-    if (payload.iss !== expectedIssuer) {
-      console.warn("[Auth] 発行者が無効:", payload.iss);
-      return false;
-    }
-
-    // オーディエンスをチェック
-    if (payload.aud !== projectId) {
-      console.warn("[Auth] オーディエンスが無効:", payload.aud);
-      return false;
-    }
-
-    // 匿名認証の場合、provider_id は "anonymous"
-    // 匿名認証と他のプロバイダの両方を許可
+    const decodedToken = await getAdminAuth().verifyIdToken(token);
     console.log(
       "[Auth] トークン検証成功。プロバイダ:",
-      payload.firebase?.sign_in_provider || "unknown",
+      decodedToken.firebase?.sign_in_provider || "unknown",
     );
-
     return true;
   } catch (error) {
     console.error("[Auth] トークン検証エラー:", error);

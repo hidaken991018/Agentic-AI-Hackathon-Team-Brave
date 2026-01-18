@@ -7,9 +7,11 @@
  * @module sessionManager
  */
 
+import { AxiosError } from "axios";
 import { GoogleAuth } from "google-auth-library";
 
 import { CONSTS } from "@/consts";
+import { axiosClient } from "@/libs/common/axiosClient";
 import { getSessionURI } from "@/libs/google/generateURI";
 
 /** UUID v4 形式の検証用正規表現 */
@@ -108,13 +110,9 @@ export async function createSession(): Promise<Result<string, SessionError>> {
   try {
     const token = await getAuthenticatedClient();
 
-    const res = await fetch(getSessionURI(LOCATION, RESOURCE_NAME), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const res = await axiosClient.post(
+      getSessionURI(LOCATION, RESOURCE_NAME),
+      {
         classMethod: "async_create_session",
         input: {
           // 匿名セッション - user_id は空文字
@@ -122,21 +120,15 @@ export async function createSession(): Promise<Result<string, SessionError>> {
           // Agent Engine の TTL（秒単位）
           ttl_seconds: SESSION_TTL_DAYS * 24 * 60 * 60,
         },
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      return {
-        ok: false,
-        error: {
-          code: "SESSION_CREATE_FAILED",
-          message: `Failed to create session: ${errorText}`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      };
-    }
+      },
+    );
 
-    const json = await res.json();
+    const json = res.data;
     const sessionId =
       json?.output?.id ?? json?.output?.session_id ?? json?.session_id;
 
@@ -163,6 +155,16 @@ export async function createSession(): Promise<Result<string, SessionError>> {
 
     return { ok: true, value: sessionId };
   } catch (error) {
+    // axios エラーの場合はレスポンスデータを含める
+    if (error instanceof AxiosError && error.response) {
+      return {
+        ok: false,
+        error: {
+          code: "SESSION_CREATE_FAILED",
+          message: `Failed to create session: ${JSON.stringify(error.response.data)}`,
+        },
+      };
+    }
     return {
       ok: false,
       error: {
@@ -199,42 +201,22 @@ export async function validateSession(
   try {
     const token = await getAuthenticatedClient();
 
-    const res = await fetch(getSessionURI(LOCATION, RESOURCE_NAME), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const res = await axiosClient.post(
+      getSessionURI(LOCATION, RESOURCE_NAME),
+      {
         classMethod: "async_get_session",
         input: {
           session_id: sessionId,
         },
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      // セッションが見つからない場合
-      if (res.status === 404 || errorText.toLowerCase().includes("not found")) {
-        return {
-          ok: false,
-          error: {
-            code: "SESSION_NOT_FOUND",
-            message: `Session not found: ${sessionId}`,
-          },
-        };
-      }
-      return {
-        ok: false,
-        error: {
-          code: "SESSION_NOT_FOUND",
-          message: `Failed to validate session: ${errorText}`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      };
-    }
+      },
+    );
 
-    const json = await res.json();
+    const json = res.data;
     const sessionData = json?.output ?? json;
 
     // セッションメタデータを抽出
@@ -272,6 +254,29 @@ export async function validateSession(
       },
     };
   } catch (error) {
+    // axios エラーの場合はステータスコードを確認
+    if (error instanceof AxiosError && error.response) {
+      const errorData = JSON.stringify(error.response.data);
+      if (
+        error.response.status === 404 ||
+        errorData.toLowerCase().includes("not found")
+      ) {
+        return {
+          ok: false,
+          error: {
+            code: "SESSION_NOT_FOUND",
+            message: `Session not found: ${sessionId}`,
+          },
+        };
+      }
+      return {
+        ok: false,
+        error: {
+          code: "SESSION_NOT_FOUND",
+          message: `Failed to validate session: ${errorData}`,
+        },
+      };
+    }
     return {
       ok: false,
       error: {
@@ -305,24 +310,31 @@ export async function updateSessionData(
   try {
     const token = await getAuthenticatedClient();
 
-    const res = await fetch(getSessionURI(LOCATION, RESOURCE_NAME), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    await axiosClient.post(
+      getSessionURI(LOCATION, RESOURCE_NAME),
+      {
         classMethod: "async_update_session",
         input: {
           session_id: sessionId,
           data: data,
         },
-      }),
-    });
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      if (res.status === 404 || errorText.toLowerCase().includes("not found")) {
+    return { ok: true, value: undefined };
+  } catch (error) {
+    // axios エラーの場合はステータスコードを確認
+    if (error instanceof AxiosError && error.response) {
+      const errorData = JSON.stringify(error.response.data);
+      if (
+        error.response.status === 404 ||
+        errorData.toLowerCase().includes("not found")
+      ) {
         return {
           ok: false,
           error: {
@@ -335,13 +347,10 @@ export async function updateSessionData(
         ok: false,
         error: {
           code: "SESSION_NOT_FOUND",
-          message: `Failed to update session data: ${errorText}`,
+          message: `Failed to update session data: ${errorData}`,
         },
       };
     }
-
-    return { ok: true, value: undefined };
-  } catch (error) {
     return {
       ok: false,
       error: {
