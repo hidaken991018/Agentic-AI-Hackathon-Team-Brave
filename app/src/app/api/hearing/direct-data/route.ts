@@ -10,7 +10,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  createErrorNextResponse,
   handleInternalError,
+  handleSessionError,
   handleValidationError,
 } from "@/libs/common/errorHandler";
 import {
@@ -19,7 +21,11 @@ import {
   withAuth,
 } from "@/middleware/authMiddleware";
 import { handleDirectData } from "@/usecases/hearing/agents/directDataHandler";
-import { directDataRequestSchema } from "@/usecases/hearing/schema/directDataSchema";
+import {
+  directDataRequestSchema,
+  directDataResponseSchema,
+} from "@/usecases/hearing/schema/directDataSchema";
+import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
 
 export const runtime = "nodejs";
 
@@ -69,6 +75,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // 4. ビジネスロジックを実行
   const result = await handleDirectData(parseResult.data);
 
-  // 5. CORSヘッダー付きでレスポンスを返却
-  return addCorsHeaders(result.response, origin);
+  // 5. エラー処理
+  if (!result.success) {
+    let errorResponse: NextResponse;
+    if (result.error.type === "session") {
+      errorResponse = handleSessionError(result.error.errorType);
+    } else {
+      errorResponse = createErrorNextResponse({
+        code: ErrorCode.SERVICE_UNAVAILABLE,
+        message: result.error.message,
+        details: result.error.details,
+      });
+    }
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 6. レスポンス検証
+  const responseValidation = directDataResponseSchema.safeParse(result.data);
+  if (!responseValidation.success) {
+    console.error(
+      "[DirectData] レスポンス検証に失敗しました:",
+      responseValidation.error,
+    );
+    const errorResponse = createErrorNextResponse({
+      code: ErrorCode.INTERNAL_ERROR,
+      message: "レスポンスの生成に失敗しました",
+    });
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 7. CORSヘッダー付きで成功レスポンスを返却
+  return addCorsHeaders(
+    NextResponse.json(responseValidation.data, { status: 200 }),
+    origin,
+  );
 }

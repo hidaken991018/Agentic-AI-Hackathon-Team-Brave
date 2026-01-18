@@ -7,20 +7,14 @@
  * @module interpretedDataHandler
  */
 
-import { NextResponse } from "next/server";
-
-import {
-  createErrorNextResponse,
-  handleServiceError,
-  handleSessionError,
-} from "@/libs/common/errorHandler";
 import { withRetry } from "@/libs/common/retryUtility";
 import { queryGemini } from "@/libs/google/queryGemini";
-import { updateSessionData, validateSession } from "@/libs/google/sessionManager";
-import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+import {
+  updateSessionData,
+  validateSession,
+} from "@/libs/google/sessionManager";
 import {
   DEFAULT_ESTIMATION_TARGETS,
-  interpretedDataResponseSchema,
   type Estimation,
   type InterpretedDataRequest,
   type InterpretedDataResponse,
@@ -28,13 +22,23 @@ import {
 } from "@/usecases/hearing/schema/interpretedDataSchema";
 
 /**
+ * ハンドラーエラーの型定義
+ *
+ * セッション関連エラー、サービスエラー、Geminiエラーを区別する
+ */
+export type InterpretedHandlerError =
+  | { type: "session"; errorType: "expired" | "not_found" }
+  | { type: "service"; message: string; details?: string }
+  | { type: "gemini"; originalError: unknown };
+
+/**
  * ハンドラー操作の結果型
  *
- * 成功時はInterpretedDataResponseを含むNextResponse、失敗時はエラーレスポンスを返す
+ * 成功時はInterpretedDataResponseを返し、失敗時はエラー情報を返す
  */
-type HandlerResult =
-  | { success: true; response: NextResponse<InterpretedDataResponse> }
-  | { success: false; response: NextResponse };
+export type InterpretedDataHandlerResult =
+  | { success: true; data: InterpretedDataResponse }
+  | { success: false; error: InterpretedHandlerError };
 
 /**
  * 解釈データ処理用のGeminiプロンプトを構築する
@@ -166,14 +170,14 @@ function parseGeminiResponse(responseText: string): {
  * 2. 推定対象が指定されていない場合はデフォルト値を適用
  * 3. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
  * 4. 構造化データをセッションに保存
- * 5. structuredDataとestimationsを含む成功レスポンスを返却
+ * 5. structuredDataとestimationsを含むデータを返却
  *
  * @param request - 検証済みのリクエストボディ
- * @returns ハンドラー処理結果（成功/失敗とレスポンス）
+ * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleInterpretedData(
   request: InterpretedDataRequest,
-): Promise<HandlerResult> {
+): Promise<InterpretedDataHandlerResult> {
   // 1. 既存セッションの検証（解釈データにはsessionIdが必須）
   const validationResult = await validateSession(request.sessionId);
   if (!validationResult.ok) {
@@ -183,7 +187,7 @@ export async function handleInterpretedData(
         : "not_found";
     return {
       success: false,
-      response: handleSessionError(errorType),
+      error: { type: "session", errorType },
     };
   }
   const sessionId = validationResult.value.id;
@@ -220,7 +224,7 @@ export async function handleInterpretedData(
   if (!geminiResult.ok) {
     return {
       success: false,
-      response: handleServiceError("gemini", geminiResult.error.lastError),
+      error: { type: "gemini", originalError: geminiResult.error.lastError },
     };
   }
 
@@ -238,11 +242,11 @@ export async function handleInterpretedData(
       storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      response: handleSessionError(errorType),
+      error: { type: "session", errorType },
     };
   }
 
-  // 5. 成功レスポンスの構築
+  // 5. 成功データの構築
   const processedAt = new Date().toISOString();
   const responseData: InterpretedDataResponse = {
     success: true,
@@ -252,25 +256,8 @@ export async function handleInterpretedData(
     processedAt,
   };
 
-  // レスポンスの検証（型安全性のため）
-  const responseValidation =
-    interpretedDataResponseSchema.safeParse(responseData);
-  if (!responseValidation.success) {
-    console.error(
-      "[InterpretedDataHandler] レスポンス検証に失敗しました:",
-      responseValidation.error,
-    );
-    return {
-      success: false,
-      response: createErrorNextResponse({
-        code: ErrorCode.INTERNAL_ERROR,
-        message: "レスポンス検証に失敗しました",
-      }),
-    };
-  }
-
   return {
     success: true,
-    response: NextResponse.json(responseValidation.data, { status: 200 }),
+    data: responseData,
   };
 }

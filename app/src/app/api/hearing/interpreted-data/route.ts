@@ -9,7 +9,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  createErrorNextResponse,
   handleInternalError,
+  handleServiceError,
+  handleSessionError,
   handleValidationError,
 } from "@/libs/common/errorHandler";
 import {
@@ -18,7 +21,11 @@ import {
   withAuth,
 } from "@/middleware/authMiddleware";
 import { handleInterpretedData } from "@/usecases/hearing/agents/interpretedDataHandler";
-import { interpretedDataRequestSchema } from "@/usecases/hearing/schema/interpretedDataSchema";
+import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+import {
+  interpretedDataRequestSchema,
+  interpretedDataResponseSchema,
+} from "@/usecases/hearing/schema/interpretedDataSchema";
 
 export const runtime = "nodejs";
 
@@ -81,6 +88,46 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // 4. ビジネスロジックを実行
   const result = await handleInterpretedData(parseResult.data);
 
-  // 5. CORSヘッダー付きでレスポンスを返却
-  return addCorsHeaders(result.response, origin);
+  // 5. エラー処理
+  if (!result.success) {
+    let errorResponse: NextResponse;
+    switch (result.error.type) {
+      case "session":
+        errorResponse = handleSessionError(result.error.errorType);
+        break;
+      case "gemini":
+        errorResponse = handleServiceError("gemini", result.error.originalError);
+        break;
+      case "service":
+        errorResponse = createErrorNextResponse({
+          code: ErrorCode.SERVICE_UNAVAILABLE,
+          message: result.error.message,
+          details: result.error.details,
+        });
+        break;
+    }
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 6. レスポンス検証
+  const responseValidation = interpretedDataResponseSchema.safeParse(
+    result.data,
+  );
+  if (!responseValidation.success) {
+    console.error(
+      "[InterpretedData] レスポンス検証に失敗しました:",
+      responseValidation.error,
+    );
+    const errorResponse = createErrorNextResponse({
+      code: ErrorCode.INTERNAL_ERROR,
+      message: "レスポンス検証に失敗しました",
+    });
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 7. CORSヘッダー付きで成功レスポンスを返却
+  return addCorsHeaders(
+    NextResponse.json(responseValidation.data, { status: 200 }),
+    origin,
+  );
 }

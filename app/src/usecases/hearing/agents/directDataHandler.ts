@@ -7,32 +7,33 @@
  * @module directDataHandler
  */
 
-import { NextResponse } from "next/server";
-
-import {
-  createErrorNextResponse,
-  handleSessionError,
-} from "@/libs/common/errorHandler";
 import {
   createSession,
   updateSessionData,
   validateSession,
 } from "@/libs/google/sessionManager";
 import {
-  directDataResponseSchema,
   type DirectDataRequest,
   type DirectDataResponse,
 } from "@/usecases/hearing/schema/directDataSchema";
-import { ErrorCode } from "@/usecases/hearing/schema/errorSchema";
+
+/**
+ * ハンドラーエラーの型定義
+ *
+ * セッション関連エラーとサービスエラーを区別する
+ */
+export type HandlerError =
+  | { type: "session"; errorType: "expired" | "not_found" }
+  | { type: "service"; message: string; details?: string };
 
 /**
  * ハンドラー操作の結果型
  *
- * 成功時はDirectDataResponseを含むNextResponse、失敗時はエラーレスポンスを返す
+ * 成功時はDirectDataResponseを返し、失敗時はエラー情報を返す
  */
-type HandlerResult =
-  | { success: true; response: NextResponse<DirectDataResponse> }
-  | { success: false; response: NextResponse };
+export type DirectDataHandlerResult =
+  | { success: true; data: DirectDataResponse }
+  | { success: false; error: HandlerError };
 
 /**
  * 直接データ受信のビジネスロジックを処理する
@@ -40,14 +41,14 @@ type HandlerResult =
  * 処理フロー:
  * 1. sessionIdが指定されていない場合は新規セッションを作成、指定されている場合は既存セッションを検証
  * 2. リトライ機能付きでAgent Engine Sessionsに直接データを保存
- * 3. sessionIdとタイムスタンプを含む成功レスポンスを返却
+ * 3. sessionIdとタイムスタンプを含むデータを返却
  *
  * @param request - 検証済みのリクエストボディ
- * @returns ハンドラー処理結果（成功/失敗とレスポンス）
+ * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleDirectData(
   request: DirectDataRequest,
-): Promise<HandlerResult> {
+): Promise<DirectDataHandlerResult> {
   // 1. セッション処理: 新規作成または既存の検証
   let sessionId: string;
 
@@ -61,7 +62,7 @@ export async function handleDirectData(
           : "not_found";
       return {
         success: false,
-        response: handleSessionError(errorType),
+        error: { type: "session", errorType },
       };
     }
     sessionId = validationResult.value.id;
@@ -71,11 +72,11 @@ export async function handleDirectData(
     if (!createResult.ok) {
       return {
         success: false,
-        response: createErrorNextResponse({
-          code: ErrorCode.SERVICE_UNAVAILABLE,
+        error: {
+          type: "service",
           message: "セッションの作成に失敗しました",
           details: createResult.error.message,
-        }),
+        },
       };
     }
     sessionId = createResult.value;
@@ -88,11 +89,11 @@ export async function handleDirectData(
       storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      response: handleSessionError(errorType),
+      error: { type: "session", errorType },
     };
   }
 
-  // 3. 成功レスポンスの構築
+  // 3. 成功データの構築
   const storedAt = new Date().toISOString();
   const responseData: DirectDataResponse = {
     success: true,
@@ -100,24 +101,8 @@ export async function handleDirectData(
     storedAt,
   };
 
-  // レスポンスの検証（型安全性のため）
-  const responseValidation = directDataResponseSchema.safeParse(responseData);
-  if (!responseValidation.success) {
-    console.error(
-      "[DirectDataHandler] レスポンス検証に失敗しました:",
-      responseValidation.error,
-    );
-    return {
-      success: false,
-      response: createErrorNextResponse({
-        code: ErrorCode.INTERNAL_ERROR,
-        message: "レスポンスの生成に失敗しました",
-      }),
-    };
-  }
-
   return {
     success: true,
-    response: NextResponse.json(responseValidation.data, { status: 200 }),
+    data: responseData,
   };
 }
