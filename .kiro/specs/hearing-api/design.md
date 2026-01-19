@@ -63,7 +63,7 @@ graph TB
             ErrorMW[Error Handler]
         end
 
-        subgraph Usecases[usecases/hearing]
+        subgraph Services[services/hearing]
             subgraph Agents[agents/]
                 DirectHandler[Direct Data Handler]
                 InterpretedHandler[Interpreted Data Handler]
@@ -116,12 +116,17 @@ graph TB
 ```
 
 **Architecture Integration**:
-- Selected pattern: Usecase-based Colocation（モジュラモノリス） + レイヤードアーキテクチャ
-- Domain boundaries: API Routes → usecases/hearing/{agents, schema} → libs/ の依存方向
-- Colocation benefits: hearing 機能に関連するコードが `usecases/hearing/` に集約され、変更影響範囲が明確
+- Selected pattern: Service-based Colocation（モジュラモノリス） + レイヤードアーキテクチャ
+- Domain boundaries: API Routes → services/hearing/{agents, schema} → libs/ の依存方向
+- Colocation benefits: hearing 機能に関連するコードが `services/hearing/` に集約され、変更影響範囲が明確
 - Existing patterns preserved: `@/*` パスエイリアス、Zod バリデーション、Agent Engine 統合
-- New components rationale: 各 API に専用の Handler と Schema を設け、同一ユースケース配下にコロケーション
+- New components rationale: 各 API に専用の Handler と Schema を設け、同一サービス配下にコロケーション
 - Steering compliance: tech.md のレイヤー分離原則に準拠
+
+**Handler/Route 責務分離**:
+- Handler: ビジネスロジックのみを担当。NextResponse を返さず、純粋なデータ/エラーオブジェクトを返す
+- route.ts: リクエスト検証、Handler 呼び出し、レスポンス検証、NextResponse 生成を担当
+- この分離により、Handler のテスト容易性と再利用性が向上
 
 ### Technology Stack
 
@@ -282,6 +287,7 @@ sequenceDiagram
 - セッション ID の検証（存在確認、有効期限）
 - Agent Engine Sessions への直接データ保存
 - エラー時のリトライ（最大2回）
+- Handler 戻り値のレスポンス検証と NextResponse 生成
 
 **Dependencies**
 - Inbound: Frontend — API 呼び出し (P0)
@@ -327,6 +333,7 @@ interface DirectDataResponse {
 - 推定対象項目のデフォルト値適用（省略時）
 - 必須パラメータ `outputSchema` に基づく Gemini 構造化出力
 - 推定結果のセッション保存と返却
+- Handler 戻り値のレスポンス検証と NextResponse 生成
 
 **Dependencies**
 - Inbound: Frontend — API 呼び出し (P0)
@@ -399,6 +406,7 @@ const DEFAULT_ESTIMATION_TARGETS = [
 - 不足情報に基づく追加質問の生成
 - 質問回数のカウント管理（最大3回）
 - 最大回数超過時の強制完了
+- Handler 戻り値のレスポンス検証と NextResponse 生成
 
 **Dependencies**
 - Inbound: Frontend — API 呼び出し (P0)
@@ -417,6 +425,7 @@ const DEFAULT_ESTIMATION_TARGETS = [
 // Request Schema
 interface AdditionalQuestionsRequest {
   sessionId: string;              // UUID v4（必須）
+  questionCount: number;          // 現在の質問ラウンド数（0〜3、デフォルト0）
 }
 
 // 回答数（単一選択 or 複数選択）
@@ -736,13 +745,13 @@ erDiagram
 app/src/
 ├── app/api/hearing/                    # Next.js API Routes（ルーティングのみ）
 │   ├── direct-data/
-│   │   └── route.ts                    # → usecases/hearing からインポート
+│   │   └── route.ts                    # → services/hearing からインポート
 │   ├── interpreted-data/
 │   │   └── route.ts
 │   └── additional-questions/
 │       └── route.ts
 │
-├── usecases/                           # ユースケースベース構成
+├── services/                           # サービスベース構成
 │   └── hearing/                        # ヒアリング機能（コロケーション）
 │       ├── agents/                     # ビジネスロジック
 │       │   ├── directDataHandler.ts
@@ -772,6 +781,6 @@ app/src/
 **Import Example**:
 ```typescript
 // app/api/hearing/direct-data/route.ts
-import { directDataHandler } from "@/usecases/hearing";
-import { directDataRequestSchema } from "@/usecases/hearing/schema/directDataSchema";
+import { handleDirectData } from "@/services/hearing/agents/directDataHandler";
+import { directDataRequestSchema, directDataResponseSchema } from "@/services/hearing/schema/directDataSchema";
 ```
