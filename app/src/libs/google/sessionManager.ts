@@ -1,8 +1,11 @@
 /**
  * セッション管理サービス
  *
- * Vertex AI Agent Engine Sessions を使用してヒアリングセッションを管理します。
+ * Vertex AI Agent Engine Sessions API（REST API パターン）を使用してヒアリングセッションを管理します。
  * 匿名認証を前提としており、ユーザー ID とセッション ID は紐付けません。
+ *
+ * REST API ドキュメント:
+ * https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/sessions/manage-sessions-api
  *
  * @module sessionManager
  */
@@ -12,7 +15,10 @@ import { GoogleAuth } from "google-auth-library";
 
 import { CONSTS } from "@/consts";
 import { axiosClient } from "@/libs/common/axiosClient";
-import { getSessionURI } from "@/libs/google/generateURI";
+import {
+  getSessionsBaseURI,
+  getSessionURI_REST,
+} from "@/libs/google/generateURI";
 
 /** UUID v4 形式の検証用正規表現 */
 const UUID_V4_REGEX =
@@ -20,9 +26,6 @@ const UUID_V4_REGEX =
 
 /** セッションの有効期間（日数） */
 const SESSION_TTL_DAYS = 10;
-
-/** セッションの有効期間（ミリ秒） */
-const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * 型安全なエラーハンドリングのための Result 型
@@ -53,16 +56,16 @@ export type SessionError =
 
 /**
  * セッション管理サービスのインターフェース
+ *
+ * REST API パターンに移行:
+ * - validateSession は削除（REST API では期限切れセッションが自動削除されるため）
+ * - updateSessionData は appendSessionData に改名（appendEvent API を使用）
  */
 export interface SessionManagerService {
   /** 新規セッションを作成 */
-  createSession(): Promise<Result<string, SessionError>>;
-  /** セッションの存在確認と有効期限チェック */
-  validateSession(
-    sessionId: string,
-  ): Promise<Result<SessionState, SessionError>>;
-  /** セッションデータを更新（直接データ・解釈データの保存） */
-  updateSessionData(
+  createSession(userId: string): Promise<Result<string, SessionError>>;
+  /** セッションにデータを追加（appendEvent API を使用） */
+  appendSessionData(
     sessionId: string,
     data: unknown,
   ): Promise<Result<void, SessionError>>;
@@ -75,6 +78,40 @@ export interface SessionManagerService {
  */
 export function isValidUUIDv4(id: string): boolean {
   return UUID_V4_REGEX.test(id);
+}
+
+/**
+ * 環境変数から設定を取得するヘルパー
+ *
+ * VERTEX_AGT_RESOURCE_NAME から PROJECT_ID と REASONING_ENGINE_ID を抽出するか、
+ * 専用の環境変数を使用
+ */
+function getConfig() {
+  const location = process.env.VERTEX_AGT_LOCATION!;
+  const resourceName = process.env.VERTEX_AGT_RESOURCE_NAME!;
+
+  // VERTEX_PROJECT_ID と VERTEX_REASONING_ENGINE_ID が設定されている場合はそれを使用
+  let projectId = process.env.VERTEX_PROJECT_ID;
+  let reasoningEngineId = process.env.VERTEX_REASONING_ENGINE_ID;
+
+  // 未設定の場合は RESOURCE_NAME からパース
+  // 形式: projects/{project}/locations/{location}/reasoningEngines/{reasoningEngineId}
+  if (!projectId || !reasoningEngineId) {
+    const match = resourceName.match(
+      /^projects\/([^/]+)\/locations\/[^/]+\/reasoningEngines\/([^/]+)$/,
+    );
+    if (match) {
+      projectId = projectId || match[1];
+      reasoningEngineId = reasoningEngineId || match[2];
+    } else {
+      throw new Error(
+        `Invalid VERTEX_AGT_RESOURCE_NAME format: ${resourceName}. ` +
+          `Expected: projects/{project}/locations/{location}/reasoningEngines/{reasoningEngineId}`,
+      );
+    }
+  }
+
+  return { location, projectId, reasoningEngineId };
 }
 
 /**
@@ -97,29 +134,29 @@ async function getAuthenticatedClient() {
 }
 
 /**
- * 新規セッションを作成（TTL は Agent Engine 側で管理）
+ * 新規セッションを作成（REST API パターン）
  *
- * 匿名認証のため、セッションはユーザー ID に紐付けません。
+ * REST API エンドポイント: POST /sessions
+ * リクエストボディ: { userId: string, ttl: string }
  *
+ * @param userId - ユーザー ID（匿名セッションでも必須）
  * @returns 成功時はセッション ID（UUID v4）、失敗時はエラー
  */
-export async function createSession(): Promise<Result<string, SessionError>> {
-  const LOCATION = process.env.VERTEX_AGT_LOCATION!;
-  const RESOURCE_NAME = process.env.VERTEX_AGT_RESOURCE_NAME!;
+export async function createSession(
+  userId: string,
+): Promise<Result<string, SessionError>> {
+  const { location, projectId, reasoningEngineId } = getConfig();
 
   try {
     const token = await getAuthenticatedClient();
 
+    // REST API パターン: POST /sessions
     const res = await axiosClient.post(
-      getSessionURI(LOCATION, RESOURCE_NAME),
+      getSessionsBaseURI(location, projectId, reasoningEngineId),
       {
-        classMethod: "async_create_session",
-        input: {
-          // 匿名セッション - user_id は空文字
-          user_id: "",
-          // Agent Engine の TTL（秒単位）
-          ttl_seconds: SESSION_TTL_DAYS * 24 * 60 * 60,
-        },
+        userId,
+        // REST API の TTL 形式: "{seconds}s"（例: "864000s"）
+        ttl: `${SESSION_TTL_DAYS * 24 * 60 * 60}s`,
       },
       {
         headers: {
@@ -129,8 +166,17 @@ export async function createSession(): Promise<Result<string, SessionError>> {
     );
 
     const json = res.data;
-    const sessionId =
-      json?.output?.id ?? json?.output?.session_id ?? json?.session_id;
+
+    // REST API レスポンス形式:
+    // { "name": "projects/.../sessions/SESSION_ID", ... }
+    // セッション ID は name フィールドの最後の部分
+    let sessionId: string | undefined;
+
+    if (json?.name) {
+      // name から sessionId を抽出
+      const parts = json.name.split("/");
+      sessionId = parts[parts.length - 1];
+    }
 
     if (!sessionId) {
       return {
@@ -176,14 +222,22 @@ export async function createSession(): Promise<Result<string, SessionError>> {
 }
 
 /**
- * セッション ID の検証（存在確認と有効期限チェック）
+ * セッションにデータを追加（appendEvent API を使用）
  *
- * @param sessionId - 検証対象のセッション ID
- * @returns 成功時はセッション状態、失敗時はエラー
+ * REST API エンドポイント: POST /sessions/{sessionId}:appendEvent
+ *
+ * 注意: REST API では期限切れセッションが自動削除されるため、
+ *       SESSION_EXPIRED と SESSION_NOT_FOUND の区別はできません。
+ *       セッションが見つからない場合は一律 SESSION_NOT_FOUND を返します。
+ *
+ * @param sessionId - データを追加するセッション ID
+ * @param data - 保存するデータ
+ * @returns 成功時は void、失敗時はエラー
  */
-export async function validateSession(
+export async function appendSessionData(
   sessionId: string,
-): Promise<Result<SessionState, SessionError>> {
+  data: unknown,
+): Promise<Result<void, SessionError>> {
   // まず UUID v4 形式を検証
   if (!isValidUUIDv4(sessionId)) {
     return {
@@ -195,125 +249,20 @@ export async function validateSession(
     };
   }
 
-  const LOCATION = process.env.VERTEX_AGT_LOCATION!;
-  const RESOURCE_NAME = process.env.VERTEX_AGT_RESOURCE_NAME!;
+  const { location, projectId, reasoningEngineId } = getConfig();
 
   try {
     const token = await getAuthenticatedClient();
 
-    const res = await axiosClient.post(
-      getSessionURI(LOCATION, RESOURCE_NAME),
-      {
-        classMethod: "async_get_session",
-        input: {
-          session_id: sessionId,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
-    const json = res.data;
-    const sessionData = json?.output ?? json;
-
-    // セッションメタデータを抽出
-    const createdAt = sessionData?.created_at ?? sessionData?.createdAt;
-    const expiresAt = sessionData?.expires_at ?? sessionData?.expiresAt;
-
-    // 有効期限情報がある場合、期限切れかチェック
-    if (expiresAt) {
-      const expirationTime = new Date(expiresAt).getTime();
-      if (Date.now() > expirationTime) {
-        return {
-          ok: false,
-          error: {
-            code: "SESSION_EXPIRED",
-            message: `Session expired at ${expiresAt}`,
-          },
-        };
-      }
-    }
-
-    // 有効期限が未提供の場合は TTL から計算
-    const calculatedCreatedAt = createdAt ?? new Date().toISOString();
-    const calculatedExpiresAt =
-      expiresAt ??
-      new Date(
-        new Date(calculatedCreatedAt).getTime() + SESSION_TTL_MS,
-      ).toISOString();
-
-    return {
-      ok: true,
-      value: {
-        id: sessionId,
-        createdAt: calculatedCreatedAt,
-        expiresAt: calculatedExpiresAt,
-      },
-    };
-  } catch (error) {
-    // axios エラーの場合はステータスコードを確認
-    if (error instanceof AxiosError && error.response) {
-      const errorData = JSON.stringify(error.response.data);
-      if (
-        error.response.status === 404 ||
-        errorData.toLowerCase().includes("not found")
-      ) {
-        return {
-          ok: false,
-          error: {
-            code: "SESSION_NOT_FOUND",
-            message: `Session not found: ${sessionId}`,
-          },
-        };
-      }
-      return {
-        ok: false,
-        error: {
-          code: "SESSION_NOT_FOUND",
-          message: `Failed to validate session: ${errorData}`,
-        },
-      };
-    }
-    return {
-      ok: false,
-      error: {
-        code: "SESSION_NOT_FOUND",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-    };
-  }
-}
-
-/**
- * セッションデータを更新（直接データ・解釈データの保存）
- *
- * 注意: この関数を呼び出す前に、呼び出し元で validateSession を実行してください。
- *       二重検証を避けるため、この関数内では validateSession を呼び出しません。
- *
- * @param sessionId - 更新対象のセッション ID（呼び出し元で検証済みであること）
- * @param data - 保存するデータ
- * @returns 成功時は void、失敗時はエラー
- */
-export async function updateSessionData(
-  sessionId: string,
-  data: unknown,
-): Promise<Result<void, SessionError>> {
-  const LOCATION = process.env.VERTEX_AGT_LOCATION!;
-  const RESOURCE_NAME = process.env.VERTEX_AGT_RESOURCE_NAME!;
-
-  try {
-    const token = await getAuthenticatedClient();
-
+    // REST API パターン: POST /sessions/{sessionId}:appendEvent
     await axiosClient.post(
-      getSessionURI(LOCATION, RESOURCE_NAME),
+      `${getSessionURI_REST(location, projectId, reasoningEngineId, sessionId)}:appendEvent`,
       {
-        classMethod: "async_update_session",
-        input: {
-          session_id: sessionId,
-          data: data,
+        author: "system",
+        timestamp: new Date().toISOString(),
+        content: {
+          role: "system",
+          parts: [{ text: JSON.stringify(data) }],
         },
       },
       {
@@ -344,7 +293,7 @@ export async function updateSessionData(
         ok: false,
         error: {
           code: "SESSION_NOT_FOUND",
-          message: `Failed to update session data: ${errorData}`,
+          message: `Failed to append session data: ${errorData}`,
         },
       };
     }
@@ -363,8 +312,7 @@ export async function updateSessionData(
  */
 export const sessionManager: SessionManagerService = {
   createSession,
-  validateSession,
-  updateSessionData,
+  appendSessionData,
 };
 
 export default sessionManager;

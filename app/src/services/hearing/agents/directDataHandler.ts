@@ -2,15 +2,15 @@
  * 直接データハンドラー
  *
  * ユーザーから直接入力されたデータを受け取り、セッションに保存するためのハンドラーモジュール。
- * 新規セッションの作成または既存セッションの検証を行い、データをAgent Engine Sessionsに格納する。
+ * 新規セッションの作成または既存セッションへのデータ追加を行い、データをAgent Engine Sessionsに格納する。
  *
  * @module directDataHandler
  */
 
 import {
+  appendSessionData,
   createSession,
-  updateSessionData,
-  validateSession,
+  isValidUUIDv4,
 } from "@/libs/google/sessionManager";
 import {
   type DirectDataRequest,
@@ -39,9 +39,13 @@ export type DirectDataHandlerResult =
  * 直接データ受信のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. sessionIdが指定されていない場合は新規セッションを作成、指定されている場合は既存セッションを検証
- * 2. リトライ機能付きでAgent Engine Sessionsに直接データを保存
- * 3. sessionIdとタイムスタンプを含むデータを返却
+ * 1. sessionIdが指定されていない場合は新規セッションを作成
+ * 2. sessionIdが指定されている場合は形式を検証
+ * 3. リトライ機能付きでAgent Engine Sessionsに直接データを保存
+ * 4. sessionIdとタイムスタンプを含むデータを返却
+ *
+ * 注意: REST API では期限切れセッションが自動削除されるため、
+ *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
  *
  * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
@@ -49,26 +53,21 @@ export type DirectDataHandlerResult =
 export async function handleDirectData(
   request: DirectDataRequest,
 ): Promise<DirectDataHandlerResult> {
-  // 1. セッション処理: 新規作成または既存の検証
+  // 1. セッション処理: 新規作成または既存セッション ID の形式検証
   let sessionId: string;
 
   if (request.sessionId) {
-    // 既存セッションの検証
-    const validationResult = await validateSession(request.sessionId);
-    if (!validationResult.ok) {
-      const errorType =
-        validationResult.error.code === "SESSION_EXPIRED"
-          ? "expired"
-          : "not_found";
+    // 既存セッション ID の形式を検証
+    if (!isValidUUIDv4(request.sessionId)) {
       return {
         success: false,
-        error: { type: "session", errorType },
+        error: { type: "session", errorType: "not_found" },
       };
     }
-    sessionId = validationResult.value.id;
+    sessionId = request.sessionId;
   } else {
     // 新規セッションの作成
-    const createResult = await createSession();
+    const createResult = await createSession(request.userId);
     if (!createResult.ok) {
       return {
         success: false,
@@ -83,13 +82,13 @@ export async function handleDirectData(
   }
 
   // 2. セッションに直接データを保存（リトライは axiosClient で一元管理）
-  const storeResult = await updateSessionData(sessionId, request.data);
+  // REST API では期限切れセッションが自動削除されるため、
+  // 失敗した場合は一律 not_found として扱う
+  const storeResult = await appendSessionData(sessionId, request.data);
   if (!storeResult.ok) {
-    const errorType =
-      storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      error: { type: "session", errorType },
+      error: { type: "session", errorType: "not_found" },
     };
   }
 

@@ -10,8 +10,8 @@
 import { withRetry } from "@/libs/common/retryUtility";
 import { queryGemini } from "@/libs/google/queryGemini";
 import {
-  updateSessionData,
-  validateSession,
+  appendSessionData,
+  isValidUUIDv4,
 } from "@/libs/google/sessionManager";
 import {
   DEFAULT_ESTIMATION_TARGETS,
@@ -166,11 +166,14 @@ function parseGeminiResponse(responseText: string): {
  * 解釈データ処理のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. 既存セッションを検証
+ * 1. セッション ID の形式を検証
  * 2. 推定対象が指定されていない場合はデフォルト値を適用
  * 3. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
- * 4. 構造化データをセッションに保存
+ * 4. 構造化データをセッションに保存（セッション存在確認も兼ねる）
  * 5. structuredDataとestimationsを含むデータを返却
+ *
+ * 注意: REST API では期限切れセッションが自動削除されるため、
+ *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
  *
  * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
@@ -178,19 +181,14 @@ function parseGeminiResponse(responseText: string): {
 export async function handleInterpretedData(
   request: InterpretedDataRequest,
 ): Promise<InterpretedDataHandlerResult> {
-  // 1. 既存セッションの検証（解釈データにはsessionIdが必須）
-  const validationResult = await validateSession(request.sessionId);
-  if (!validationResult.ok) {
-    const errorType =
-      validationResult.error.code === "SESSION_EXPIRED"
-        ? "expired"
-        : "not_found";
+  // 1. セッション ID の形式を検証（解釈データには sessionId が必須）
+  if (!isValidUUIDv4(request.sessionId)) {
     return {
       success: false,
-      error: { type: "session", errorType },
+      error: { type: "session", errorType: "not_found" },
     };
   }
-  const sessionId = validationResult.value.id;
+  const sessionId = request.sessionId;
 
   // 2. 推定対象が指定されていない場合はデフォルト値を適用
   const estimationTargets: string[] =
@@ -231,18 +229,18 @@ export async function handleInterpretedData(
   const { structuredData, estimations } = geminiResult.value;
 
   // 4. セッションに構造化データを保存（リトライは axiosClient で一元管理）
-  const storeResult = await updateSessionData(sessionId, {
+  // REST API では期限切れセッションが自動削除されるため、
+  // 失敗した場合は一律 not_found として扱う
+  const storeResult = await appendSessionData(sessionId, {
     interpretedData: structuredData,
     estimations,
     processedAt: new Date().toISOString(),
   });
 
   if (!storeResult.ok) {
-    const errorType =
-      storeResult.error.code === "SESSION_EXPIRED" ? "expired" : "not_found";
     return {
       success: false,
-      error: { type: "session", errorType },
+      error: { type: "session", errorType: "not_found" },
     };
   }
 

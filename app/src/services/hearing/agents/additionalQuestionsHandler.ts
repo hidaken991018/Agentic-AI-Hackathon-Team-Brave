@@ -10,7 +10,7 @@
 import { randomUUID } from "crypto";
 
 import { withRetry } from "@/libs/common/retryUtility";
-import { validateSession } from "@/libs/google/sessionManager";
+import { isValidUUIDv4 } from "@/libs/google/sessionManager";
 import {
   type AdditionalQuestionsRequest,
   type AdditionalQuestionsResponse,
@@ -213,16 +213,13 @@ function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
 export async function handleAdditionalQuestions(
   request: AdditionalQuestionsRequest,
 ): Promise<AdditionalQuestionsHandlerResult> {
-  // 1. 既存セッションの検証
-  const validationResult = await validateSession(request.sessionId);
-  if (!validationResult.ok) {
-    const errorType =
-      validationResult.error.code === "SESSION_EXPIRED"
-        ? "expired"
-        : "not_found";
+  // 1. セッション ID の形式を検証
+  // REST API では期限切れセッションが自動削除されるため、
+  // 事前検証は形式チェックのみ行い、実際の存在確認は後続のAPI呼び出しで判定
+  if (!isValidUUIDv4(request.sessionId)) {
     return {
       success: false,
-      error: { type: "session", errorType },
+      error: { type: "session", errorType: "not_found" },
     };
   }
 
