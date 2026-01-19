@@ -10,26 +10,6 @@
 import { z } from "zod";
 
 /**
- * デフォルトの推定対象項目
- *
- * リクエストで estimationTargets が未指定の場合に使用されます。
- * - inflationRate: 想定物価上昇率
- * - incomeGrowthRate: 想定収入成長率
- * - riskTolerance: リスク許容度
- * - planningHorizon: 計画期間志向
- */
-export const DEFAULT_ESTIMATION_TARGETS = [
-  "inflationRate",
-  "incomeGrowthRate",
-  "riskTolerance",
-  "planningHorizon",
-] as const;
-
-/** デフォルト推定対象項目の型 */
-export type DefaultEstimationTarget =
-  (typeof DEFAULT_ESTIMATION_TARGETS)[number];
-
-/**
  * コンテンツの最大文字数制限
  */
 export const MAX_CONTENT_LENGTH = 5000;
@@ -69,7 +49,7 @@ export type JsonSchema = z.infer<typeof jsonSchemaSchema>;
  *
  * @property sessionId - セッション ID（必須、UUID v4）
  * @property content - 自由記述テキスト（最大5000文字）
- * @property estimationTargets - 推定対象項目（省略時はデフォルト）
+ * @property estimationTargets - 推定対象項目（必須、1つ以上）
  * @property outputSchema - Gemini 構造化出力スキーマ（必須）
  */
 export const interpretedDataRequestSchema = z.object({
@@ -82,8 +62,10 @@ export const interpretedDataRequestSchema = z.object({
     .max(MAX_CONTENT_LENGTH, {
       message: `content は ${MAX_CONTENT_LENGTH} 文字以内である必要があります`,
     }),
-  /** 推定対象項目（省略時はデフォルト値を使用） */
-  estimationTargets: z.array(z.string()).optional(),
+  /** 推定対象項目（必須、1つ以上） */
+  estimationTargets: z.array(z.string()).min(1, {
+    message: "estimationTargets は少なくとも1つ以上必要です",
+  }),
   /** Gemini 構造化出力スキーマ */
   outputSchema: jsonSchemaSchema,
 });

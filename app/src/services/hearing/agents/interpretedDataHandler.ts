@@ -11,7 +11,6 @@ import { withRetry } from "@/libs/common/retryUtility";
 import { queryGemini } from "@/libs/google/queryGemini";
 import { appendSessionData } from "@/libs/google/sessionManager";
 import {
-  DEFAULT_ESTIMATION_TARGETS,
   type Estimation,
   type InterpretedDataRequest,
   type InterpretedDataResponse,
@@ -163,10 +162,9 @@ function parseGeminiResponse(responseText: string): {
  * 解釈データ処理のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. 推定対象が指定されていない場合はデフォルト値を適用
- * 2. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
- * 3. 構造化データをセッションに保存（セッション存在確認も兼ねる）
- * 4. structuredDataとestimationsを含むデータを返却
+ * 1. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
+ * 2. 構造化データをセッションに保存（セッション存在確認も兼ねる）
+ * 3. structuredDataとestimationsを含むデータを返却
  *
  * 注意: REST API では期限切れセッションが自動削除されるため、
  *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
@@ -178,14 +176,9 @@ export async function handleInterpretedData(
   request: InterpretedDataRequest,
 ): Promise<InterpretedDataHandlerResult> {
   const sessionId = request.sessionId;
+  const estimationTargets = request.estimationTargets;
 
-  // 1. 推定対象が指定されていない場合はデフォルト値を適用
-  const estimationTargets: string[] =
-    request.estimationTargets && request.estimationTargets.length > 0
-      ? request.estimationTargets
-      : [...DEFAULT_ESTIMATION_TARGETS];
-
-  // 2. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
+  // 1. リトライ機能付きでGemini APIを呼び出し、解釈データを処理
   const prompt = buildInterpretationPrompt(
     request.content,
     estimationTargets,
@@ -217,7 +210,7 @@ export async function handleInterpretedData(
 
   const { structuredData, estimations } = geminiResult.value;
 
-  // 3. セッションに構造化データを保存（リトライは axiosClient で一元管理）
+  // 2. セッションに構造化データを保存（リトライは axiosClient で一元管理）
   // REST API では期限切れセッションが自動削除されるため、
   // 失敗した場合は一律 not_found として扱う
   const storeResult = await appendSessionData(sessionId, {
@@ -233,7 +226,7 @@ export async function handleInterpretedData(
     };
   }
 
-  // 4. 成功データの構築
+  // 3. 成功データの構築
   const processedAt = new Date().toISOString();
   const responseData: InterpretedDataResponse = {
     success: true,
