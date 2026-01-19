@@ -10,7 +10,6 @@
 import {
   appendSessionData,
   createSession,
-  isValidUUIDv4,
 } from "@/libs/google/sessionManager";
 import {
   type DirectDataRequest,
@@ -40,9 +39,8 @@ export type DirectDataHandlerResult =
  *
  * 処理フロー:
  * 1. sessionIdが指定されていない場合は新規セッションを作成
- * 2. sessionIdが指定されている場合は形式を検証
- * 3. リトライ機能付きでAgent Engine Sessionsに直接データを保存
- * 4. sessionIdとタイムスタンプを含むデータを返却
+ * 2. リトライ機能付きでAgent Engine Sessionsに直接データを保存
+ * 3. sessionIdとタイムスタンプを含むデータを返却
  *
  * 注意: REST API では期限切れセッションが自動削除されるため、
  *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
@@ -53,17 +51,10 @@ export type DirectDataHandlerResult =
 export async function handleDirectData(
   request: DirectDataRequest,
 ): Promise<DirectDataHandlerResult> {
-  // 1. セッション処理: 新規作成または既存セッション ID の形式検証
+  // 1. セッション処理: 新規作成または既存セッション ID を使用
   let sessionId: string;
 
   if (request.sessionId) {
-    // 既存セッション ID の形式を検証
-    if (!isValidUUIDv4(request.sessionId)) {
-      return {
-        success: false,
-        error: { type: "session", errorType: "not_found" },
-      };
-    }
     sessionId = request.sessionId;
   } else {
     // 新規セッションの作成

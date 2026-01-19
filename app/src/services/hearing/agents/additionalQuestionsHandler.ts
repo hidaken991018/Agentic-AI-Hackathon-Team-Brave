@@ -10,7 +10,6 @@
 import { randomUUID } from "crypto";
 
 import { withRetry } from "@/libs/common/retryUtility";
-import { isValidUUIDv4 } from "@/libs/google/sessionManager";
 import {
   type AdditionalQuestionsRequest,
   type AdditionalQuestionsResponse,
@@ -200,12 +199,11 @@ function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
  * 追加質問生成のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. 既存セッションを検証
- * 2. 質問回数が最大値を超えているかチェック（超えている場合は強制完了）
- * 3. Agent Engineにデータの整合性/十分性チェックをリクエスト
- * 4. データが十分な場合はhearing_completedを返却
- * 5. データが不十分または矛盾がある場合はGeminiで質問を生成
- * 6. 生成された質問と共にadditional_questions_requiredを返却
+ * 1. 質問回数が最大値を超えているかチェック（超えている場合は強制完了）
+ * 2. Agent Engineにデータの整合性/十分性チェックをリクエスト
+ * 3. データが十分な場合はhearing_completedを返却
+ * 4. データが不十分または矛盾がある場合はGeminiで質問を生成
+ * 5. 生成された質問と共にadditional_questions_requiredを返却
  *
  * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
@@ -213,17 +211,7 @@ function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
 export async function handleAdditionalQuestions(
   request: AdditionalQuestionsRequest,
 ): Promise<AdditionalQuestionsHandlerResult> {
-  // 1. セッション ID の形式を検証
-  // REST API では期限切れセッションが自動削除されるため、
-  // 事前検証は形式チェックのみ行い、実際の存在確認は後続のAPI呼び出しで判定
-  if (!isValidUUIDv4(request.sessionId)) {
-    return {
-      success: false,
-      error: { type: "session", errorType: "not_found" },
-    };
-  }
-
-  // 2. 質問回数が最大値を超えているかチェック - 強制完了
+  // 1. 質問回数が最大値を超えているかチェック - 強制完了
   const currentQuestionCount = request.questionCount;
   if (currentQuestionCount >= MAX_QUESTION_ROUNDS) {
     console.log(
@@ -241,7 +229,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 3. Agent Engineでデータの整合性/十分性をチェック
+  // 2. Agent Engineでデータの整合性/十分性をチェック
   const consistencyResult = await withRetry(
     async () => {
       const result = await checkDataConsistency(request.sessionId);
@@ -259,7 +247,7 @@ export async function handleAdditionalQuestions(
 
   const consistencyData = consistencyResult.value;
 
-  // 4. データが十分かつ整合性がある場合はhearing_completedを返却
+  // 3. データが十分かつ整合性がある場合はhearing_completedを返却
   if (consistencyData.isSufficient && consistencyData.isConsistent) {
     console.log(
       "[AdditionalQuestionsHandler] データが十分かつ整合性があります。ヒアリングを完了します。",
@@ -276,7 +264,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 5. Gemini APIで追加質問を生成（リトライ機能付き）
+  // 4. Gemini APIで追加質問を生成（リトライ機能付き）
   const questionGenerationResult = await withRetry(
     async () => {
       const rawQuestions = await generateQuestionsWithGemini(consistencyData);
@@ -295,7 +283,7 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 6. 生成された質問をQuestionスキーマ形式に変換
+  // 5. 生成された質問をQuestionスキーマ形式に変換
   const questions = convertToQuestions(questionGenerationResult.value);
   const newQuestionCount = currentQuestionCount + 1;
 

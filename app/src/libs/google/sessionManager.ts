@@ -20,10 +20,6 @@ import {
   getSessionURI_REST,
 } from "@/libs/google/generateURI";
 
-/** UUID v4 形式の検証用正規表現 */
-const UUID_V4_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 /** セッションの有効期間（日数） */
 const SESSION_TTL_DAYS = 10;
 
@@ -69,15 +65,6 @@ export interface SessionManagerService {
     sessionId: string,
     data: unknown,
   ): Promise<Result<void, SessionError>>;
-}
-
-/**
- * 文字列が UUID v4 形式かどうかを検証
- * @param id - 検証対象の文字列
- * @returns UUID v4 形式の場合 true
- */
-export function isValidUUIDv4(id: string): boolean {
-  return UUID_V4_REGEX.test(id);
 }
 
 /**
@@ -188,17 +175,6 @@ export async function createSession(
       };
     }
 
-    // 返却されたセッション ID が UUID v4 形式か検証
-    if (!isValidUUIDv4(sessionId)) {
-      return {
-        ok: false,
-        error: {
-          code: "SESSION_CREATE_FAILED",
-          message: `Invalid session ID format: ${sessionId}`,
-        },
-      };
-    }
-
     return { ok: true, value: sessionId };
   } catch (error) {
     // axios エラーの場合はレスポンスデータを含める
@@ -238,17 +214,6 @@ export async function appendSessionData(
   sessionId: string,
   data: unknown,
 ): Promise<Result<void, SessionError>> {
-  // まず UUID v4 形式を検証
-  if (!isValidUUIDv4(sessionId)) {
-    return {
-      ok: false,
-      error: {
-        code: "SESSION_NOT_FOUND",
-        message: `Invalid session ID format: ${sessionId}`,
-      },
-    };
-  }
-
   const { location, projectId, reasoningEngineId } = getConfig();
 
   try {
