@@ -1,11 +1,11 @@
 /**
  * セッション管理サービス
  *
- * Vertex AI Agent Engine Sessions API（REST API パターン）を使用してヒアリングセッションを管理します。
+ * Vertex AI Agent Engine を使用してヒアリングセッションを管理します。
  * 匿名認証を前提としており、ユーザー ID とセッション ID は紐付けません。
  *
- * REST API ドキュメント:
- * https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/sessions/manage-sessions-api
+ * - createSession: ADK パターン（:query エンドポイント）を使用
+ * - appendSessionData: REST API パターン（Sessions API）を使用
  *
  * @module sessionManager
  */
@@ -15,13 +15,7 @@ import { GoogleAuth } from "google-auth-library";
 
 import { CONSTS } from "@/consts";
 import { axiosClient } from "@/libs/common/axiosClient";
-import {
-  getSessionsBaseURI,
-  getSessionURI_REST,
-} from "@/libs/google/generateURI";
-
-/** セッションの有効期間（日数） */
-const SESSION_TTL_DAYS = 10;
+import { getSessionURI, getSessionURI_REST } from "@/libs/google/generateURI";
 
 /**
  * 型安全なエラーハンドリングのための Result 型
@@ -34,7 +28,7 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
  * セッション状態を表すインターフェース
  */
 export interface SessionState {
-  /** セッション ID（UUID v4） */
+  /** セッション ID */
   id: string;
   /** 作成日時（ISO 8601） */
   createdAt: string;
@@ -99,7 +93,7 @@ function getConfig() {
     }
   }
 
-  return { location, projectId, reasoningEngineId };
+  return { location, resourceName, projectId, reasoningEngineId };
 }
 
 /**
@@ -122,29 +116,28 @@ async function getAuthenticatedClient() {
 }
 
 /**
- * 新規セッションを作成（REST API パターン）
+ * 新規セッションを作成（ADK パターン）
  *
- * REST API エンドポイント: POST /sessions
- * リクエストボディ: { userId: string, ttl: string }
+ * ADK エンドポイント: POST /:query with classMethod: "async_create_session"
+ * リクエストボディ: { classMethod: string, input: { user_id: string } }
  *
  * @param userId - ユーザー ID（匿名セッションでも必須）
- * @returns 成功時はセッション ID（UUID v4）、失敗時はエラー
+ * @returns 成功時はセッション ID、失敗時はエラー
  */
 export async function createSession(
   userId: string,
 ): Promise<Result<string, SessionError>> {
-  const { location, projectId, reasoningEngineId } = getConfig();
+  const { location, resourceName } = getConfig();
 
   try {
     const token = await getAuthenticatedClient();
 
-    // REST API パターン: POST /sessions
+    // ADK パターン: POST /:query with classMethod
     const res = await axiosClient.post(
-      getSessionsBaseURI(location, projectId, reasoningEngineId),
+      getSessionURI(location, resourceName),
       {
-        userId,
-        // REST API の TTL 形式: "{seconds}s"（例: "864000s"）
-        ttl: `${SESSION_TTL_DAYS * 24 * 60 * 60}s`,
+        classMethod: "async_create_session",
+        input: { user_id: userId },
       },
       {
         headers: {
@@ -153,25 +146,18 @@ export async function createSession(
       },
     );
 
-    const json = res.data;
-
-    // REST API レスポンス形式:
-    // { "name": "projects/.../sessions/SESSION_ID", ... }
-    // セッション ID は name フィールドの最後の部分
-    let sessionId: string | undefined;
-
-    if (json?.name) {
-      // name から sessionId を抽出
-      const parts = json.name.split("/");
-      sessionId = parts[parts.length - 3];
-    }
+    // ADK レスポンス形式: { output: { id: "...", session_id: "..." } }
+    const sessionId =
+      res.data?.output?.id ??
+      res.data?.output?.session_id ??
+      res.data?.session_id;
 
     if (!sessionId) {
       return {
         ok: false,
         error: {
           code: "SESSION_CREATE_FAILED",
-          message: `session_id not found in response: ${JSON.stringify(json)}`,
+          message: `session_id not found in response: ${JSON.stringify(res.data)}`,
         },
       };
     }
