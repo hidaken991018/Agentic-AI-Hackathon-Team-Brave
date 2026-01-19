@@ -45,7 +45,7 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
  * 例: 資産運用の目標、リスク許容度の評価、ライフスタイルの希望
  *
  * リクエストボディ:
- * - sessionId: string（必須）- 有効なセッションUUID
+ * - sessionId: string（必須）- 有効なセッションID
  * - content: string（必須）- 解釈するユーザー入力内容（最大5000文字）
  * - estimationTargets: string[]（任意）- 直接提供されない場合に推定する項目
  * - outputSchema: JsonSchema（必須）- 構造化出力のスキーマ

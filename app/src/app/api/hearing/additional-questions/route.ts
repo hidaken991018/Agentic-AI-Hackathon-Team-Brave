@@ -48,7 +48,7 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
  * データが完全な場合はヒアリング完了ステータスを返します。
  *
  * リクエストボディ:
- * - sessionId: UUID - チェック対象のセッションID
+ * - sessionId: string
  * - questionCount: number - 現在の質問ラウンド数（0〜3）
  *
  * レスポンス:

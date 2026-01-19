@@ -13,14 +13,14 @@ import { z } from "zod";
  * 追加質問 API リクエストスキーマ
  *
  * @property userId - ユーザー ID（必須）
- * @property sessionId - セッション ID（必須、UUID v4）
+ * @property sessionId - セッション ID（必須）
  * @property questionCount - 現在の質問ラウンド数（0-3、デフォルト0）
  */
 export const additionalQuestionsRequestSchema = z.object({
   /** ユーザー ID（必須） */
   userId: z.string().min(1, { message: "userId は必須です" }),
   /** セッション ID（必須） */
-  sessionId: z.string().uuid(),
+  sessionId: z.string(),
   /** 現在の質問ラウンド数（フロントエンド側で管理） */
   questionCount: z.number().int().min(0).max(3).default(0),
 });
