@@ -74,7 +74,7 @@ export const directDataResponseSchema = z.object({
   /** 成功フラグ */
   success: z.literal(true),
   /** セッション ID */
-  sessionId: z.string().uuid(),
+  sessionId: z.string(),
   /** データ保存日時 */
   storedAt: z.string().datetime({ offset: true }),
 });

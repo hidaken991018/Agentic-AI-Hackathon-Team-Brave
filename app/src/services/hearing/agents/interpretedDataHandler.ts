@@ -49,7 +49,10 @@ export type InterpretedDataHandlerResult =
  * @param estimationTargets - 推定対象の項目リスト
  * @returns Vertex AI Agent Engine用のプロンプト文字列
  */
-function buildAgentPrompt(content: string, estimationTargets: string[]): string {
+function buildAgentPrompt(
+  content: string,
+  estimationTargets: string[],
+): string {
   return `
 あなたはファイナンシャルプランナーのアシスタントです。
 セッションに蓄積されたデータとユーザーの入力を総合的に分析し、解釈・推論を行ってください。
@@ -254,7 +257,10 @@ export async function handleInterpretedData(
 
   const geminiResult = await withRetry(
     async () => {
-      const responseText = await queryGemini(geminiResponseSchema, structuringPrompt);
+      const responseText = await queryGemini(
+        geminiResponseSchema,
+        structuringPrompt,
+      );
       if (!responseText) {
         throw new Error("Gemini APIからのレスポンスが空です");
       }
@@ -272,14 +278,20 @@ export async function handleInterpretedData(
 
   const { structuredData, estimations } = geminiResult.value;
 
+  const invocationId = "hearing";
+
   // 3. セッションに構造化データを保存（リトライは axiosClient で一元管理）
   // REST API では期限切れセッションが自動削除されるため、
   // 失敗した場合は一律 not_found として扱う
-  const storeResult = await appendSessionData(sessionId, {
-    interpretedData: structuredData,
-    estimations,
-    processedAt: new Date().toISOString(),
-  });
+  const storeResult = await appendSessionData(
+    sessionId,
+    {
+      interpretedData: structuredData,
+      estimations,
+      processedAt: new Date().toISOString(),
+    },
+    invocationId,
+  );
 
   if (!storeResult.ok) {
     return {

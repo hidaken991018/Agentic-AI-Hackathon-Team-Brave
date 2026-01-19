@@ -64,6 +64,7 @@ export interface SessionManagerService {
   appendSessionData(
     sessionId: string,
     data: unknown,
+    invocationId?: string,
   ): Promise<Result<void, SessionError>>;
 }
 
@@ -162,7 +163,7 @@ export async function createSession(
     if (json?.name) {
       // name から sessionId を抽出
       const parts = json.name.split("/");
-      sessionId = parts[parts.length - 1];
+      sessionId = parts[parts.length - 3];
     }
 
     if (!sessionId) {
@@ -213,6 +214,7 @@ export async function createSession(
 export async function appendSessionData(
   sessionId: string,
   data: unknown,
+  invocationId: string,
 ): Promise<Result<void, SessionError>> {
   const { location, projectId, reasoningEngineId } = getConfig();
 
@@ -223,10 +225,12 @@ export async function appendSessionData(
     await axiosClient.post(
       `${getSessionURI_REST(location, projectId, reasoningEngineId, sessionId)}:appendEvent`,
       {
-        author: "system",
+        name: `projects/${projectId}/locations/${location}/reasoningEngines/${reasoningEngineId}/sessions/${sessionId}/events/${invocationId}`,
+        author: "user",
+        invocationId: invocationId,
         timestamp: new Date().toISOString(),
         content: {
-          role: "system",
+          role: "user",
           parts: [{ text: JSON.stringify(data) }],
         },
       },

@@ -7,10 +7,7 @@
  * @module directDataHandler
  */
 
-import {
-  appendSessionData,
-  createSession,
-} from "@/libs/google/sessionManager";
+import { appendSessionData, createSession } from "@/libs/google/sessionManager";
 import {
   type DirectDataRequest,
   type DirectDataResponse,
@@ -72,10 +69,17 @@ export async function handleDirectData(
     sessionId = createResult.value;
   }
 
+  // 一連の操作で使用する invocationId を固定
+  const invocationId = "hearing";
+
   // 2. セッションに直接データを保存（リトライは axiosClient で一元管理）
   // REST API では期限切れセッションが自動削除されるため、
   // 失敗した場合は一律 not_found として扱う
-  const storeResult = await appendSessionData(sessionId, request.data);
+  const storeResult = await appendSessionData(
+    sessionId,
+    request.data,
+    invocationId,
+  );
   if (!storeResult.ok) {
     return {
       success: false,
