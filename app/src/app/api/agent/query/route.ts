@@ -6,7 +6,7 @@ import { fpInstructor } from "@/agents/fpInstructor";
 import { jsonEditor } from "@/agents/jsonEditor";
 import { createSessionId } from "@/libs/google/createSessionId";
 import { getAccessToken } from "@/libs/google/getAccessToken";
-import { hearingJsonSchemaForLlm } from "@/schema/hearingJsonSchema";
+import { hearingJsonSchemaForLlm } from "@/schema/hearingJson/hearingJsonSchema";
 
 type Body = {
   userId: string;
