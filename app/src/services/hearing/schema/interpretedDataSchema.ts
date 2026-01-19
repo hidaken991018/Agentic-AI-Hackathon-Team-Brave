@@ -57,7 +57,7 @@ export const interpretedDataRequestSchema = z.object({
   /** ユーザー ID（必須） */
   userId: z.string().min(1, { message: "userId は必須です" }),
   /** セッション ID（必須） */
-  sessionId: z.string().uuid({ message: "sessionId は有効な UUID v4 である必要があります" }),
+  sessionId: z.string(),
   /** 自由記述テキスト */
   content: z
     .string()
@@ -113,7 +113,9 @@ export const interpretedDataResponseSchema = z.object({
   /** 推定結果 */
   estimations: z.record(z.string(), estimationSchema),
   /** 処理日時 */
-  processedAt: z.string().datetime({ message: "processedAt は ISO 8601 形式である必要があります" }),
+  processedAt: z
+    .string()
+    .datetime({ message: "processedAt は ISO 8601 形式である必要があります" }),
 });
 
 /** 解釈データ API レスポンス型 */
