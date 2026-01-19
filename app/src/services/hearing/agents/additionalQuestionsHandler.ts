@@ -1,8 +1,9 @@
 /**
  * 追加質問ハンドラー
  *
- * セッション内のデータの整合性と十分性をチェックし、必要に応じて追加質問を生成するハンドラーモジュール。
- * Agent Engineでデータの検証を行い、Gemini APIで自然言語の質問を生成する。
+ * マルチエージェントパイプラインでセッション内のデータを検証し、追加質問を生成するハンドラーモジュール。
+ * 1. Vertex AI Agent Engine: セッションデータの整合性・十分性チェック
+ * 2. Gemini API: 追加質問の構造化生成
  *
  * @module additionalQuestionsHandler
  */
@@ -10,6 +11,9 @@
 import { randomUUID } from "crypto";
 
 import { withRetry } from "@/libs/common/retryUtility";
+import { getAccessToken } from "@/libs/google/getAccessToken";
+import { queryAIAgent } from "@/libs/google/queryAIAgent";
+import { queryGemini } from "@/libs/google/queryGemini";
 import {
   type AdditionalQuestionsRequest,
   type AdditionalQuestionsResponse,
@@ -42,23 +46,9 @@ export type AdditionalQuestionsHandlerResult =
   | { success: false; error: AdditionalQuestionsHandlerError };
 
 /**
- * Agent Engineからのデータ整合性チェック結果
+ * Gemini APIから生成された質問
  */
-interface ConsistencyCheckResult {
-  /** データに矛盾がないかどうか */
-  isConsistent: boolean;
-  /** データが十分に収集されているかどうか */
-  isSufficient: boolean;
-  /** 検出された矛盾のリスト */
-  inconsistencies: string[];
-  /** 欠落しているフィールドのリスト */
-  missingFields: string[];
-}
-
-/**
- * Gemini APIから生成された質問（answerMethodが追加される前）
- */
-interface RawGeneratedQuestion {
+interface GeneratedQuestion {
   /** 質問文 */
   text: string;
   /** 推奨される回答数（単一または複数） */
@@ -77,97 +67,123 @@ interface RawGeneratedQuestion {
 }
 
 /**
- * モック: Agent Engineでデータの整合性と十分性をチェックする
+ * Vertex AI Agent Engine用の整合性チェックプロンプトを構築する
  *
- * 本番環境では、実際のAgent Engine APIを呼び出して以下を行う:
- * - セッション内のデータ整合性を検証
- * - 必須フィールドが入力されているかチェック
- * - 矛盾点や欠落情報を特定
- *
- * @param sessionId - 検証対象のセッションID
- * @returns データ整合性チェックの結果
+ * @returns Agent Engine用のプロンプト文字列
  */
-async function checkDataConsistency(
-  sessionId: string,
-): Promise<ConsistencyCheckResult> {
-  // TODO: 実際のAgent Engine API呼び出しに置き換える
-  console.log(
-    `[AdditionalQuestionsHandler] セッションのデータ整合性をチェック中: ${sessionId}`,
-  );
+function buildConsistencyCheckPrompt(): string {
+  return `
+あなたはファイナンシャルプランナーのアシスタントです。
+セッションに蓄積されたデータを分析し、以下の観点でチェックを行ってください。
 
-  // モック実装 - Agent Engineのレスポンスをシミュレート
-  // 本番環境では実際のAPI呼び出しを行う
-  const mockResult: ConsistencyCheckResult = {
-    isConsistent: true,
-    isSufficient: false, // 追加データが必要であることをシミュレート
-    inconsistencies: [],
-    missingFields: ["retirement_age", "risk_tolerance"],
-  };
+## チェック項目
+1. データの整合性: 矛盾する情報がないか
+2. データの十分性: ファイナンシャルプランニングに必要な情報が揃っているか
 
-  return mockResult;
+## 必要な情報の例
+- 年齢、家族構成
+- 収入、支出
+- 資産、負債
+- リスク許容度
+- 将来の目標（退職年齢、子供の教育費など）
+
+## 出力要件
+以下の形式で分析結果を出力してください：
+- データに矛盾があるかどうか
+- データが十分かどうか
+- 矛盾点のリスト（あれば）
+- 欠落している情報のリスト（あれば）
+`.trim();
 }
 
 /**
- * モック: Gemini APIを使用して追加質問を生成する
+ * Gemini API用の質問生成プロンプトを構築する
  *
- * 本番環境では、Gemini APIを呼び出して以下を行う:
- * - 欠落フィールドと矛盾点を分析
- * - 自然言語の質問を生成
- * - 適切な回答形式を提案
- *
- * @param consistencyResult - データ整合性チェックの結果
- * @returns 生成された質問のリスト
+ * @param agentAnalysis - Agent Engineからの分析結果
+ * @returns Gemini API用のプロンプト文字列
  */
-async function generateQuestionsWithGemini(
-  consistencyResult: ConsistencyCheckResult,
-): Promise<RawGeneratedQuestion[]> {
-  // TODO: 実際のGemini API呼び出しに置き換える
-  console.log("[AdditionalQuestionsHandler] Gemini APIで質問を生成中");
+function buildQuestionGenerationPrompt(agentAnalysis: string): string {
+  return `
+以下のデータ分析結果に基づいて、ユーザーに追加で質問する項目を生成してください。
 
-  // モック実装 - 欠落フィールドに基づいて質問を生成
-  const questions: RawGeneratedQuestion[] = [];
+## 分析結果
+${agentAnalysis}
 
-  for (const field of consistencyResult.missingFields) {
-    if (field === "retirement_age") {
-      questions.push({
-        text: "何歳で退職を予定していますか？",
-        suggestedAnswerCount: "single",
-        suggestedAnswerFormat: "numeric",
-        requiresAiInterpretation: false,
-      });
-    } else if (field === "risk_tolerance") {
-      questions.push({
-        text: "投資に対するリスク許容度はどの程度ですか？",
-        suggestedAnswerCount: "single",
-        suggestedAnswerFormat: "radio",
-        requiresAiInterpretation: false,
-        options: [
-          "低リスク（安定重視）",
-          "中リスク（バランス型）",
-          "高リスク（成長重視）",
-        ],
-      });
-    } else {
-      questions.push({
-        text: `${field}についてお教えください。`,
-        suggestedAnswerCount: "single",
-        suggestedAnswerFormat: "short_text",
-        requiresAiInterpretation: true,
-      });
-    }
+## 出力要件
+欠落している情報や矛盾点を解消するための質問を生成してください。
+各質問には適切な回答形式を設定してください。
+`.trim();
+}
+
+/**
+ * 質問生成用のGeminiレスポンススキーマを構築する
+ *
+ * @returns Gemini APIのレスポンススキーマオブジェクト
+ */
+function buildQuestionGenerationSchema() {
+  return {
+    type: "object",
+    properties: {
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            text: {
+              type: "string",
+              description: "質問文",
+            },
+            suggestedAnswerCount: {
+              type: "string",
+              enum: ["single", "multiple"],
+              description: "推奨される回答数",
+            },
+            suggestedAnswerFormat: {
+              type: "string",
+              enum: ["radio", "pulldown", "numeric", "short_text", "long_text"],
+              description: "推奨される回答形式",
+            },
+            requiresAiInterpretation: {
+              type: "boolean",
+              description: "AI解釈が必要かどうか",
+            },
+            options: {
+              type: "array",
+              items: { type: "string" },
+              description: "選択肢（radio/pulldownの場合）",
+            },
+          },
+          required: [
+            "text",
+            "suggestedAnswerCount",
+            "suggestedAnswerFormat",
+            "requiresAiInterpretation",
+          ],
+        },
+        description: "生成された質問リスト",
+      },
+    },
+    required: ["questions"],
+  };
+}
+
+/**
+ * Geminiのレスポンスをパースして生成された質問を抽出する
+ *
+ * @param responseText - Gemini APIからのレスポンステキスト
+ * @returns 生成された質問リスト
+ */
+function parseGeminiResponse(responseText: string): GeneratedQuestion[] {
+  try {
+    const parsed = JSON.parse(responseText);
+    return parsed.questions ?? [];
+  } catch (error) {
+    console.error(
+      "[AdditionalQuestionsHandler] Geminiレスポンスのパースに失敗しました:",
+      error,
+    );
+    throw new Error("Geminiレスポンスを JSON としてパースできませんでした");
   }
-
-  // 矛盾点に対する質問を追加
-  for (const inconsistency of consistencyResult.inconsistencies) {
-    questions.push({
-      text: `以下の点について確認させてください：${inconsistency}`,
-      suggestedAnswerCount: "single",
-      suggestedAnswerFormat: "long_text",
-      requiresAiInterpretation: true,
-    });
-  }
-
-  return questions;
 }
 
 /**
@@ -175,35 +191,35 @@ async function generateQuestionsWithGemini(
  *
  * answerMethodを追加してスキーマに準拠した形式に変換する
  *
- * @param rawQuestions - 生成された質問のリスト
+ * @param generatedQuestions - 生成された質問のリスト
  * @returns Questionスキーマ形式に変換された質問リスト
  */
-function convertToQuestions(rawQuestions: RawGeneratedQuestion[]): Question[] {
-  return rawQuestions.map((raw) => {
+function convertToQuestions(generatedQuestions: GeneratedQuestion[]): Question[] {
+  return generatedQuestions.map((q) => {
     const answerMethod: AnswerMethod = {
-      answerCount: raw.suggestedAnswerCount,
-      answerFormat: raw.suggestedAnswerFormat,
-      requiresAiInterpretation: raw.requiresAiInterpretation,
-      ...(raw.options && { options: raw.options }),
+      answerCount: q.suggestedAnswerCount,
+      answerFormat: q.suggestedAnswerFormat,
+      requiresAiInterpretation: q.requiresAiInterpretation,
+      ...(q.options && { options: q.options }),
     };
 
     return {
       id: randomUUID(),
-      text: raw.text,
+      text: q.text,
       answerMethod,
     };
   });
 }
 
 /**
- * 追加質問生成のビジネスロジックを処理する
+ * 追加質問生成のビジネスロジックを処理する（マルチエージェントパイプライン）
  *
  * 処理フロー:
  * 1. 質問回数が最大値を超えているかチェック（超えている場合は強制完了）
- * 2. Agent Engineにデータの整合性/十分性チェックをリクエスト
- * 3. データが十分な場合はhearing_completedを返却
- * 4. データが不十分または矛盾がある場合はGeminiで質問を生成
- * 5. 生成された質問と共にadditional_questions_requiredを返却
+ * 2. Vertex AI Agent Engine でセッションデータの整合性・十分性を分析
+ * 3. Gemini API で分析結果を構造化し、追加質問を生成
+ * 4. データが十分な場合はhearing_completedを返却
+ * 5. データが不十分または矛盾がある場合は生成された質問を返却
  *
  * @param request - 検証済みのリクエストボディ
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
@@ -229,28 +245,68 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 2. Agent Engineでデータの整合性/十分性をチェック
-  const consistencyResult = await withRetry(
+  // 2. Vertex AI Agent Engine でセッションデータの整合性・十分性を分析
+  const agentPrompt = buildConsistencyCheckPrompt();
+
+  const agentResult = await withRetry(
     async () => {
-      const result = await checkDataConsistency(request.sessionId);
-      return result;
+      const accessToken = await getAccessToken();
+      const response = await queryAIAgent(
+        process.env.VERTEX_AGT_LOCATION || "",
+        process.env.VERTEX_AGT_RESOURCE_NAME || "",
+        accessToken,
+        request.userId,
+        request.sessionId,
+        agentPrompt,
+      );
+      if (!response) {
+        throw new Error("Agent Engineからのレスポンスが空です");
+      }
+      return response;
     },
     { maxRetries: 2, initialDelayMs: 1000, backoffMultiplier: 2 },
   );
 
-  if (!consistencyResult.ok) {
+  if (!agentResult.ok) {
     return {
       success: false,
-      error: { type: "agent", originalError: consistencyResult.error.lastError },
+      error: { type: "agent", originalError: agentResult.error.lastError },
     };
   }
 
-  const consistencyData = consistencyResult.value;
+  const agentAnalysis = agentResult.value;
 
-  // 3. データが十分かつ整合性がある場合はhearing_completedを返却
-  if (consistencyData.isSufficient && consistencyData.isConsistent) {
+  // 3. Gemini API で分析結果を構造化し、追加質問を生成
+  const structuringPrompt = buildQuestionGenerationPrompt(agentAnalysis);
+  const geminiResponseSchema = buildQuestionGenerationSchema();
+
+  const geminiResult = await withRetry(
+    async () => {
+      const responseText = await queryGemini(geminiResponseSchema, structuringPrompt);
+      if (!responseText) {
+        throw new Error("Gemini APIからのレスポンスが空です");
+      }
+      return parseGeminiResponse(responseText);
+    },
+    { maxRetries: 2, initialDelayMs: 1000, backoffMultiplier: 2 },
+  );
+
+  if (!geminiResult.ok) {
+    return {
+      success: false,
+      error: {
+        type: "gemini",
+        originalError: geminiResult.error.lastError,
+      },
+    };
+  }
+
+  const generatedQuestions = geminiResult.value;
+
+  // 4. 質問が生成されなかった場合はデータが十分と判断し、hearing_completedを返却
+  if (generatedQuestions.length === 0) {
     console.log(
-      "[AdditionalQuestionsHandler] データが十分かつ整合性があります。ヒアリングを完了します。",
+      "[AdditionalQuestionsHandler] 追加質問が不要です。ヒアリングを完了します。",
     );
 
     const responseData: AdditionalQuestionsResponse = {
@@ -264,27 +320,8 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  // 4. Gemini APIで追加質問を生成（リトライ機能付き）
-  const questionGenerationResult = await withRetry(
-    async () => {
-      const rawQuestions = await generateQuestionsWithGemini(consistencyData);
-      return rawQuestions;
-    },
-    { maxRetries: 2, initialDelayMs: 1000, backoffMultiplier: 2 },
-  );
-
-  if (!questionGenerationResult.ok) {
-    return {
-      success: false,
-      error: {
-        type: "gemini",
-        originalError: questionGenerationResult.error.lastError,
-      },
-    };
-  }
-
   // 5. 生成された質問をQuestionスキーマ形式に変換
-  const questions = convertToQuestions(questionGenerationResult.value);
+  const questions = convertToQuestions(generatedQuestions);
   const newQuestionCount = currentQuestionCount + 1;
 
   // レスポンスデータの構築

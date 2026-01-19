@@ -108,6 +108,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           details: result.error.details,
         });
         break;
+      default:
+        // 予期しないエラータイプの場合のフォールバック
+        errorResponse = createErrorNextResponse({
+          code: ErrorCode.INTERNAL_ERROR,
+          message: "Unknown error type",
+        });
+        break;
     }
     return addCorsHeaders(errorResponse, origin);
   }
