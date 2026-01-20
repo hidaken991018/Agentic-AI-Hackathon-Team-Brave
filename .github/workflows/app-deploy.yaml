@@ -77,7 +77,12 @@ jobs:
       - name: Docker Auth
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      # 5. ビルドとプッシュ
+      # 5. Firebase環境変数の確認（デバッグ用 - AUTH_DOMAINは公開情報）
+      - name: Check Firebase secrets
+        run: |
+          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}"
+
+      # 6. ビルドとプッシュ
       - name: Build and Push Container
         working-directory: ./app
         run: |-
