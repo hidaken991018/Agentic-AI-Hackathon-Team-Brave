@@ -76,7 +76,16 @@ resource "google_project_iam_member" "run_firestore" {
   project = data.google_project.project.project_id
   role    = "roles/datastore.user"
   member  = local.run_service_account
-  
+
+  depends_on = [google_cloud_run_v2_service.front_back_app]
+}
+
+# 4. Secret Manager アクセス権限の付与
+resource "google_project_iam_member" "run_secret_manager" {
+  project = data.google_project.project.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = local.run_service_account
+
   depends_on = [google_cloud_run_v2_service.front_back_app]
 }
 
