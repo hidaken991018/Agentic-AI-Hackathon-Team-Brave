@@ -9,8 +9,20 @@ import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
  * 判定基準: K_SERVICE環境変数の有無（Cloud Run上ではこの変数が自動設定される）
  */
 
-const isGCP = (): boolean => {
+/**
+ * GCP環境かどうかを判定
+ */
+export const isGCP = (): boolean => {
   return !!process.env.K_SERVICE;
+};
+
+export const getEnvInfo = () => {
+  const gcp = isGCP();
+  return {
+    isGCP: gcp,
+    environment: gcp ? "GCP (Cloud Run)" : "Local",
+    source: gcp ? "Secret Manager" : ".env.local (process.env)",
+  };
 };
 
 // Secret Managerクライアント（シングルトン）
@@ -45,7 +57,7 @@ const getProjectIdFromMetadata = async (): Promise<string | undefined> => {
         headers: {
           "Metadata-Flavor": "Google",
         },
-      }
+      },
     );
 
     if (response.ok) {
@@ -67,7 +79,7 @@ const getProjectIdFromMetadata = async (): Promise<string | undefined> => {
  */
 const getSecretFromSecretManager = async (
   secretName: string,
-  projectId: string
+  projectId: string,
 ): Promise<string | undefined> => {
   // キャッシュに存在すればそれを返す
   if (secretCache.has(secretName)) {
@@ -107,7 +119,7 @@ const getSecretFromSecretManager = async (
  */
 export const getEnv = async (
   key: string,
-  projectId?: string
+  projectId?: string,
 ): Promise<string | undefined> => {
   // ローカル環境の場合は process.env から取得
   if (!isGCP()) {
@@ -119,7 +131,7 @@ export const getEnv = async (
   const gcpProjectId = projectId || (await getProjectIdFromMetadata());
   if (!gcpProjectId) {
     console.error(
-      "Failed to get GCP project ID. Cannot access Secret Manager without project ID."
+      "Failed to get GCP project ID. Cannot access Secret Manager without project ID.",
     );
     return undefined;
   }
@@ -136,7 +148,7 @@ export const getEnv = async (
  */
 export const getEnvs = async (
   keys: string[],
-  projectId?: string
+  projectId?: string,
 ): Promise<Map<string, string | undefined>> => {
   const results = new Map<string, string | undefined>();
 
@@ -144,7 +156,7 @@ export const getEnvs = async (
     keys.map(async (key) => {
       const value = await getEnv(key, projectId);
       results.set(key, value);
-    })
+    }),
   );
 
   return results;
@@ -160,7 +172,7 @@ export const getEnvs = async (
  */
 export const getRequiredEnv = async (
   key: string,
-  projectId?: string
+  projectId?: string,
 ): Promise<string> => {
   const value = await getEnv(key, projectId);
 
