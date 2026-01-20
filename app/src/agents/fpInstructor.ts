@@ -1,4 +1,5 @@
 import { CONSTS } from "@/consts";
+import { getEnv } from "@/libs/env";
 import { queryAIAgent } from "@/libs/google/queryAIAgent";
 
 export async function fpInstructor(
@@ -10,9 +11,12 @@ export async function fpInstructor(
 ) {
   const query = `${CONSTS.PROMPT.ROLE_DEFINITION.FP}${requestToAi}${userMessage}`;
 
+  const location = (await getEnv("VERTEX_AGT_LOCATION")) || "";
+  const resourceName = (await getEnv("VERTEX_AGT_RESOURCE_NAME")) || "";
+
   return await queryAIAgent(
-    process.env.VERTEX_AGT_LOCATION || "",
-    process.env.VERTEX_AGT_RESOURCE_NAME || "",
+    location,
+    resourceName,
     accessToken,
     userId,
     sessionId,
