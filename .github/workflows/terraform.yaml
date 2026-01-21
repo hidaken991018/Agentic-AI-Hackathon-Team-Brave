@@ -1,12 +1,16 @@
 name: 'Terraform Deployment'
 
 on:
-  push:
-    branches:
-      - main # mainブランチにコードがプッシュまたはマージされたら実行
-  pull_request:
-    branches:
-      - main # プルリクエストが作成された時にも実行（Planのみ確認するため）
+  workflow_call:
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      GCP_ALLOWED_USERS:
+        required: true
 
 # Workload Identity 連携に必要な権限設定
 permissions:
@@ -41,9 +45,6 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           create_credentials_file: true
 
-      # - name: 'Set up Cloud SDK'
-      # uses: 'google-github-actions/setup-gcloud@v2' # 【追加】安定性の向上
-
       # 3. Terraform のセットアップ
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -58,7 +59,5 @@ jobs:
         run: terraform plan -no-color
 
       # 6. Terraform Apply (反映)
-      # 条件: mainブランチへのプッシュ（またはマージ）時のみ実行する
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve
