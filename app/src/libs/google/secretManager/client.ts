@@ -1,5 +1,7 @@
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
+import { CONSTS } from "@/consts";
+
 /**
  * Google Cloud Secret Manager のラッパー
  *
@@ -33,14 +35,11 @@ export const getProjectIdFromMetadata = async (): Promise<string | undefined> =>
   }
 
   try {
-    const response = await fetch(
-      "http://metadata.google.internal/computeMetadata/v1/project/project-id",
-      {
-        headers: {
-          "Metadata-Flavor": "Google",
-        },
+    const response = await fetch(CONSTS.ENDPOINT.GOOGLE.METADATA_PROJECT_ID, {
+      headers: {
+        "Metadata-Flavor": "Google",
       },
-    );
+    });
 
     if (response.ok) {
       cachedProjectId = await response.text();
