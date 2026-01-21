@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
 
+# Workload Identity 連携に必要な権限設定
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   # --- Step 1: Terraform でインフラをプロビジョニング ---
   terraform:
