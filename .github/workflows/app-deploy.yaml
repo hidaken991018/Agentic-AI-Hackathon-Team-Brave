@@ -1,9 +1,28 @@
 name: Build and Deploy to Cloud Run
 
 on:
-  push:
-    tags:
-      - "v*" # v1.0.0 などの本番用タグがpushされた時のみ起動
+  workflow_call:
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      NEXT_PUBLIC_FIREBASE_API_KEY:
+        required: true
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
+        required: true
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID:
+        required: true
+      NEXT_PUBLIC_FIREBASE_APP_ID:
+        required: true
+      BASIC_AUTH_USER:
+        required: true
+      BASIC_AUTH_PASSWORD:
+        required: true
+
+  # 直接実行も可能（手動トリガー）
   workflow_dispatch:
 
 env:
