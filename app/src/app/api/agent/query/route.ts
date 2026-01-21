@@ -3,8 +3,7 @@ export const runtime = "nodejs";
 
 import { fpInstructor } from "@/agents/fpInstructor";
 import { jsonEditor } from "@/agents/jsonEditor";
-import { createSessionId } from "@/libs/google/createSessionId";
-import { getAccessToken } from "@/libs/google/getAccessToken";
+import { createSessionId, getAccessToken } from "@/libs/google";
 import { hearingJsonSchemaForLlm } from "@/schema/hearingJsonSchema";
 
 type Body = {

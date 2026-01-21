@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getEnv } from "@/libs/env";
-import { getEnvInfo } from "@/libs/env/getEnv";
+import { getEnv, getEnvInfo } from "@/config";
 
 /**
  * 環境変数取得の動作確認用APIエンドポイント

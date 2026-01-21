@@ -1,8 +1,8 @@
 import { GoogleAuth } from "google-auth-library";
 
+import { getRequiredEnv } from "@/config";
 import { CONSTS } from "@/consts";
-import { getRequiredEnv } from "@/libs/env";
-import { getSessionURI } from "@/libs/google/generateURI";
+import { getSessionURI } from "./generateURI";
 
 export async function createSessionId(userId: string): Promise<string> {
   const LOCATION = await getRequiredEnv("VERTEX_AGT_LOCATION");

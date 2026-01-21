@@ -1,6 +1,6 @@
+import { getEnv } from "@/config";
 import { CONSTS } from "@/consts";
-import { getEnv } from "@/libs/env";
-import { queryAIAgent } from "@/libs/google/queryAIAgent";
+import { queryAIAgent } from "@/libs/google";
 
 export async function fpInstructor(
   accessToken: string,

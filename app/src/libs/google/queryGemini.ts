@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+import { getEnv } from "@/config";
 import { CONSTS } from "@/consts";
-import { getEnv } from "@/libs/env";
 
 let aiClient: GoogleGenAI | null = null;
 
