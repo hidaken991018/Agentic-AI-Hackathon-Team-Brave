@@ -28,12 +28,7 @@ export async function POST(req: Request) {
     : await createSessionId(userId);
 
   // === FP AI によるLife Compassの生成 ===
- const requestToAi = `ライフプランデータを分析し、指定されたJSON形式でLife Compassを出力してください。
-  返信は必ず以下のTypeScriptインターフェース（Zodスキーマ）に準拠した純粋なJSONのみとし、説明文やMarkdownの装飾（\`\`\`json など）は含めないでください。
-  出力は必ず { で始まり、 } で終わるようにしてください
-
-  ### 出力スキーマ
-  ${aiCommentJsonSchemaForLlm}
+ const requestToAi = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
 
   ### 各項目の作成ルール
   1. commentList:
@@ -47,9 +42,10 @@ export async function POST(req: Request) {
   3. quizDirectionList:
     - 説教臭くない「面白い雑学」としてクイズを1問作成してください。
     - ライフプランデータ上の「変化点（支出増、資産の転換期など）」や「リスク」を特定し、それを補完するための学習方針を記述してください。
-    - ジャンル例：公的制度、資産運用、行動経済学
     - 記述形式：「ユーザーは〇〇年頃に△△という状況になるため、☆☆に関する知識を問うクイズを出題し、□□の意識を高める方針とする」といった戦略的な内容にしてください。
     - 改行は \n にエスケープし、1つの連続した文字列として格納してください`;
+
+  const aijsonResponse = await jsonEditor(aiCommentJsonSchemaForLlm, requestToAi);
 
   const fpAiStart = Date.now();
   const instructions = await fpInstructor(
