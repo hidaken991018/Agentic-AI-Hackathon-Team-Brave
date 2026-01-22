@@ -17,6 +17,7 @@ locals {
   secrets = {
     "ENV_VAR_TEST"   = "default-value-1"
     "ENV_VAR_TEST_2" = "default-value-2"
+    "DATABASE_URL"   = "postgresql://user:password@host:5432/dbname" # GCPコンソールで実際の値に更新
   }
 }
 
