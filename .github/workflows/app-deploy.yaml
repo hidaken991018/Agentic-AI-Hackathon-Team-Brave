@@ -1,0 +1,139 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  workflow_call:
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      NEXT_PUBLIC_FIREBASE_API_KEY:
+        required: true
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
+        required: true
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID:
+        required: true
+      NEXT_PUBLIC_FIREBASE_APP_ID:
+        required: true
+      BASIC_AUTH_USER:
+        required: true
+      BASIC_AUTH_PASSWORD:
+        required: true
+
+  # 直接実行も可能（手動トリガー）
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast1
+  REPOSITORY: nextjs-app
+  SERVICE: life-compass-agent
+  IMAGE_NAME: app-image
+
+jobs:
+  # --- Job 1: テスト & Lint (CI) ---
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. チェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+        # 2. Node.js セットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "./app/package.json"
+          cache: "npm"
+          cache-dependency-path: "./app/package-lock.json"
+
+      # 3. 依存関係インストール
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      # 4. Lint 実行
+      - name: Run Lint
+        working-directory: ./app
+        run: npm run lint
+
+      # 5. テスト実行
+      # TODO:　テストコードが整い次第有効化
+      # - name: Run Test
+      #   working-directory: ./app
+      #   run: npm test
+
+  # --- Job 2: ビルド & プッシュ ---
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    outputs:
+      image_tag: ${{ github.sha }} # デプロイJobへ渡すID
+    steps:
+      # 1. チェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Google Cloud 認証
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # 3. gcloud CLI のセットアップ
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v2"
+
+      # 4. Docker 認証
+      - name: Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # 5. ビルドとプッシュ
+      - name: Build and Push Container
+        working-directory: ./app
+        run: |-
+          IMAGE_URL=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker build --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }} \
+            -t $IMAGE_URL .
+          docker push $IMAGE_URL
+
+  # --- Job 3: デプロイ ---
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      # 1. Google Cloud 認証
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # 2. Cloud Run へのデプロイ
+      - name: Deploy to Cloud Run
+        uses: "google-github-actions/deploy-cloudrun@v2"
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
+          flags: "--allow-unauthenticated"
+          env_vars: |-
+            BASIC_AUTH_USER=${{ secrets.BASIC_AUTH_USER }}
+            BASIC_AUTH_PASSWORD=${{ secrets.BASIC_AUTH_PASSWORD }}

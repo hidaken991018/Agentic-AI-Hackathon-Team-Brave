@@ -1,15 +1,18 @@
 {
   "version": "0.2",
   "words": [
+    "Agentic",
     "aiplatform",
     "cloudpickle",
+    "dotenv",
+    "Firestore",
+    "Hackathon",
     "mypy",
     "pydantic",
     "pyproject",
     "serviceusage",
     "venv",
-    "vertexai",
-    "Firestore"
+    "vertexai"
   ],
   "languageSettings": [
     {

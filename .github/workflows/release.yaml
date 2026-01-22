@@ -1,0 +1,38 @@
+name: "Release (Terraform + App Deploy)"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Workload Identity 連携に必要な権限設定
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # --- Step 1: Terraform でインフラをプロビジョニング ---
+  terraform:
+    name: "1. Terraform Provisioning"
+    uses: ./.github/workflows/terraform.yaml
+    secrets:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      GCP_ALLOWED_USERS: ${{ secrets.GCP_ALLOWED_USERS }}
+
+  # --- Step 2: アプリケーションをデプロイ ---
+  deploy:
+    name: "2. App Deploy"
+    needs: terraform # Terraform 完了後に実行
+    uses: ./.github/workflows/app-deploy.yaml
+    secrets:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      BASIC_AUTH_USER: ${{ secrets.BASIC_AUTH_USER }}
+      BASIC_AUTH_PASSWORD: ${{ secrets.BASIC_AUTH_PASSWORD }}
