@@ -5,6 +5,7 @@ import { fpInstructor } from "@/agents/fpInstructor";
 import { jsonEditor } from "@/agents/jsonEditor";
 import { createSessionId } from "@/libs/google/createSessionId";
 import { getAccessToken } from "@/libs/google/getAccessToken";
+import { aiCommentJsonSchemaForLlm } from "@/schema/aiCommentJsonSchema";
 import { hearingJsonSchemaForLlm } from "@/schema/hearingJsonSchema";
 
 type Body = {
@@ -27,31 +28,28 @@ export async function POST(req: Request) {
     : await createSessionId(userId);
 
   // === FP AI によるLife Compassの生成 ===
-  const requestToAi = `ユーザーへの質問返しは一切行わず、以下の3つのセクションで構成されるLife Compassを出力してください。
+ const requestToAi = `ライフプランデータを分析し、指定されたJSON形式でLife Compassを出力してください。
+  返信は必ず以下のTypeScriptインターフェース（Zodスキーマ）に準拠した純粋なJSONのみとし、説明文やMarkdownの装飾（\`\`\`json など）は含めないでください。
+  出力は必ず { で始まり、 } で終わるようにしてください
 
-    ■ユーザーへの返信コメント
-    ・ユーザーの言葉を否定せず、ライフプランデータに基づいて現状分析や将来へのアドバイスを1〜3文で伝えてください。
-    ・具体的な根拠（例：「今の資金状況であれば教育資金の準備は順調ですね」など）を交えたコメントを心がけてください。
+  ### 出力スキーマ
+  ${aiCommentJsonSchemaForLlm}
 
-    ■ネクストアクション
-    ・ライフプランデータを分析し、次に確認・入力すべき項目(例:具体的な月々の支出、住宅ローンの予定など)を1つ提案してください。
-    ・「〜を確認してください」「〜の準備を始めましょう」といった形式とし、質問形式（〜ですか？）は禁止します。
+  ### 各項目の作成ルール
+  1. commentList:
+    - ユーザーを否定せず、データに基づく現状分析を伝えてください。
+    - 具体的な根拠（例：「2043年に純資産が黒字化する見込みです」など）を必ず含めてください。
 
-    ■ライフプラン表
-    ・提供されたライフプランデータ（section, group, year, value）を読み解き、以下の2形式で出力してください。
+  2. nextActionList:
+    - 分析に基づき、次に確認・入力すべき項目を1つ提案してください。
+    - 「〜を確認してください」「〜の準備を始めましょう」という形式に限定し、質問形式は禁止します。
 
-    1. 【Markdownテーブル形式】
-       主要なライフイベントが発生する年や、5年刻みの節目（2025, 2030, 2035...）を抽出し、家族別に以下の構成で表を作成してください。
-       | 西暦 | 年齢(太郎) | ライフイベント | 世帯年収 | 純資産(貯蓄残高) |
-       | :--- | :--- | :--- | :--- | :--- |
-       ※「純資産」の推移がわかるように必ず含めてください。
-
-    2. 【推移グラフ用データ】
-       フロントエンドのグラフライブラリで描画するためのJSONデータを、以下のルールで出力してください。
-
-       ・形式：JSONの配列形式（[{"year": 2025, "income": 700, ...}, ...]）
-       ・項目：西暦(year)、世帯年収(income)、支出(expense)、純資産(netWorth)
-       ・間隔：yearカラムの内容をもとに、5年刻みのデータポイントを作成してください。`;
+  3. quizDirectionList:
+    - 説教臭くない「面白い雑学」としてクイズを1問作成してください。
+    - ライフプランデータ上の「変化点（支出増、資産の転換期など）」や「リスク」を特定し、それを補完するための学習方針を記述してください。
+    - ジャンル例：公的制度、資産運用、行動経済学
+    - 記述形式：「ユーザーは〇〇年頃に△△という状況になるため、☆☆に関する知識を問うクイズを出題し、□□の意識を高める方針とする」といった戦略的な内容にしてください。
+    - 改行は \n にエスケープし、1つの連続した文字列として格納してください`;
 
   const fpAiStart = Date.now();
   const instructions = await fpInstructor(
