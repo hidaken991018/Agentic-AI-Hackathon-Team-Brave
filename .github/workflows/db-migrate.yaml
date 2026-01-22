@@ -1,0 +1,80 @@
+name: 'Database Migration'
+
+on:
+  # release.yaml から呼び出される
+  workflow_call:
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      DATABASE_URL:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate:
+    name: 'Run Prisma Migration'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+
+    steps:
+      # 1. コードのチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Node.js セットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: './app/package.json'
+          cache: 'npm'
+          cache-dependency-path: './app/package-lock.json'
+
+      # 3. 依存関係インストール
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Prisma Client 生成
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # 5. Google Cloud 認証
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # 6. Cloud SQL Auth Proxy セットアップ
+      - name: Setup Cloud SQL Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.3/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      # 7. Cloud SQL Proxy 起動（バックグラウンド）
+      - name: Start Cloud SQL Proxy
+        run: |
+          ./cloud-sql-proxy --port 5432 ${{ secrets.GCP_PROJECT_ID }}:asia-northeast1:life-compass-postgres &
+          sleep 5  # Proxy起動待ち
+
+      # 8. マイグレーション実行
+      - name: Run Prisma Migration
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
+      # 9. マイグレーション状態確認
+      - name: Check Migration Status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate status
