@@ -8,8 +8,8 @@ import { StepBar } from "@/components/hearingForm/StepBar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import questionsData from "@/consts/questions.json";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
+import questionsData from "@/libs/formUtils/questions.json";
 import {
   generateDefaultValues,
   transformToApiPayload,
