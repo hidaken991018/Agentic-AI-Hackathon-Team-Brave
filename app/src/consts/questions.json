@@ -1,0 +1,187 @@
+[
+  {
+    "step": 1,
+    "stepTitle": "基本情報",
+    "questions": [
+      { "id": "q01", "label": "あなたの名前を教えてください。", "type": "text", "required": true, "mapping": "basicProfile.user.name" },
+      { "id": "q02", "label": "あなたの誕生年を教えてください。", "type": "select", "options": "year_range", "required": true, "mapping": "basicProfile.user.birthYear" },
+      { "id": "q03", "label": "配偶者の名前を教えてください。", "type": "text", "required": false, "mapping": "basicProfile.partner.name" },
+      { "id": "q04", "label": "配偶者の誕生年を教えてください。", "type": "select", "options": "year_range", "required": false, "mapping": "basicProfile.partner.birthYear" },
+      { 
+        "id":	"q05",	"label":"お子様がいらっしゃいますか？（予定がある）","type":"select",
+        "options": [{ "label": "はい", "value": "yes" }, { "label": "いいえ", "value": "no" }], "required": true 
+        , "mapping": "basicProfile.childList"
+      },
+      {
+        "id": "children_group",
+        "label": "お子様の情報",
+        "type": "field_array",
+        "condition": { "field": "q05", "operator": "===", "value": "yes" },
+        "mapping": "basicProfile.childList",
+        "fields": [
+          { "id": "q06", "label": "お子様のお名前", "type": "text", "required": true , "mapping": "name"},
+          { "id": "q07", "label": "誕生年", "type": "select", "options": "year_range", "required": true , "mapping": "birthYear"},
+          { "id": "q08", "label": "未就学児の学費種別", "type": "radio", "options": "edu_options" , "mapping": "preschoolersType"},
+          { "id": "q09", "label": "小学校の学費種別", "type": "radio", "options": "edu_options" , "mapping": 	"primarySchoolType"},
+          {	"id":"q10","label":"中学校の学費種別","type":"radio","options":"edu_options","mapping":"middleSchoolType"},
+          {	"id":"q11","label":"高校の学費種別","type":"radio","options":"edu_options","mapping":"highSchoolType"},
+          { "id": "q12", "label": "大学の学費種別", "type": "radio", "options": "edu_options" , "mapping": "universityType" },
+          { "id": "q13", "label": "大学院の学費種別", "type": "radio", "options": "edu_options" , "mapping": "graduateSchoolType" }
+        ]
+      }
+    ]
+  }
+ ,
+  {
+    "step": 2,
+    "stepTitle": "経済前提",
+    "questions": [
+      { 
+        "id": "q14", "label": "数字はAIに自動算出させますか？", "type": "radio", 
+        "options": [{ "label": "はい", "value": "yes" }, { "label": "いいえ", "value": "no" }], "required": true 
+   
+      },
+      { 
+        "id": "q15", "label": "基本スタンス", "type": "radio", 
+        "condition": { "field": "q14", "operator": "===", "value": "yes" },
+        "options": [
+          { "label": "悲観的（安全第一）", "value": "conservative" },
+          { "label": "妥当的", "value": "moderate" },
+          { "label": "楽観的", "value": "aggressive" }
+        ],"purpose": "qualitative","related": ["#016", "#017" , "#020" , "#028" ]
+      },
+      { "id": "q16", "label": "検討材料にしたいこと", "type": "textarea", "condition": { "field": "q14", "operator": "===", "value": "yes" },"purpose": "qualitative","related": ["#016", "#017" , "#020" , "#028" ]},
+      { "id": "q17", "label": "物価上昇率（％）", "type": "number", "condition": { "field": "q14", "operator": "===", "value": "no" },"mapping": "economic_assumption.inflationRate" },
+      { "id": "q18", "label": "投資利回り（％）", "type": "number", "condition": { "field": "q14", "operator": "===", "value": "no" } ,"mapping": "economic_assumption.investmentReturnRate"}
+    ]
+  },
+  {
+    "step": 3,
+    "stepTitle": "収入",
+    "questions": [
+      { "id": "q19", "label": "年金自動概算を使用しますか？", "type": "select", "options": "yes_no", "required": true},
+      { "id": "q20", "label": "65歳までの間に何年間給与所得を受け取る想定ですか？", "type": "select", "options": "years_0_40", "condition": { "field": "q19", "operator": "===", "value": "yes" } },
+      {
+        "id": "own_income_group", "label": "あなたの継続収入", "type": "field_array", "mapping": "income.user.stableIncomeList",
+        "fields": [
+          { "id": "q21", "label": "納める金額(月額)", "type": "number", "required": true ,"mapping": "initialAmount"},
+          { "id": "q22", "label": "収入概要", "type": "text","mapping": "name" },
+          { "id": "q23", "label": "想定成長率(%)", "type": "number","mapping": "growthRate" },
+          { "id": "q24", "label": "開始年齢", "type": "select", "options": "age_range" ,"mapping": "startAge"},
+          { "id": "q25", "label": "終了年齢", "type": "select", "options": "age_range" ,"mapping": "endAge"}
+        ]
+      },
+      { "id": "q26", "label": "将来の一時収入はありますか？", "type": "select", "options": "yes_no", "required": true },
+      {
+        "id": "own_extra_income_group", "label": "あなたの一時収入詳細", "type": "field_array", "mapping": "income.user.temporaryIncomeList",
+        "condition": { "field": "q26", "operator": "===", "value": "yes" },
+        "fields": [
+          { "id": "q27", "label": "収入概要", "type": "text","mapping": "name" },
+          { "id": "q28", "label": "発生年(西暦)", "type": "select", "options": "future_year_range","mapping": "occurYear" },
+          { "id": "q29", "label": "金額", "type": "number","mapping": "amount" }
+        ]
+      },
+      {
+        "id": "partner_income_group", "label": "配偶者の継続収入", "type": "field_array","mapping": "income.partner.stableIncomeList",
+        "fields": [
+          { "id": "q30", "label": "納める金額(月額)", "type": "number" ,"mapping": "initialAmount"},
+          { "id": "q31", "label": "概要", "type": "text" ,"mapping": "name"},
+          { "id": "q32", "label": "給与所得ですか？", "type": "select", "options": "yes_no","mapping": "isSalary"},
+          { "id": "q33", "label": "想定成長率(%)", "type": "number" ,"mapping": "growthRate"},
+          { "id": "q34", "label": "開始年齢", "type": "select", "options": "age_range","mapping": "startAge" },
+          { "id": "q35", "label": "終了年齢", "type": "select", "options": "age_range","mapping": "endAge" }
+        ]
+      },
+      { "id": "q36", "label": "配偶者の一時収入はありますか？", "type": "select", "options": "yes_no" },
+      {
+        "id": "partner_extra_income_group", "label": "配偶者の一時収入詳細", "type": "field_array", "mapping": "income.partner.temporaryIncomeList",
+        "condition": { "field": "q36", "operator": "===", "value": "yes" },
+        "fields": [
+          { "id": "q37", "label": "内容", "type": "text","mapping": "name" },
+          { "id": "q38", "label": "発生年(西暦)", "type": "select", "options": "future_year_range" ,"mapping": "occurYear"},
+          { "id": "q39", "label": "金額", "type": "number","mapping": "amount" }
+        ]
+      },
+      { "id": "q40", "label": "その他収入の考慮事項", "type": "textarea","purpose": "qualitative","related": [] }
+    ]
+  },
+  {
+    "step": 4,
+    "stepTitle": "支出",
+    "questions": [
+      { "id": "q41", "label": "現在の月間生活費はいくらですか？（住居費を含む）", "type": "number", "required": true ,"mapping": "expenses.currentMonthlyLivingCost"},
+      { "id": "q42", "label": "お子様は何歳で独立すると想定しますか？", "type": "number", "required": true ,"mapping": "expenses.childIndependenceAge"},
+      { "id": "q43", "label": "住宅は賃貸ですか？持ち家ですか？", "type": "radio", "options": [{ "label": "賃貸", "value": "rent" }, { "label": "持ち家", "value": "own" }], "required": true,"mapping": "expenses.housingType" },
+      { "id": "q44", "label": "現在の住宅費（月額）はいくらですか？", "type": "number", "condition": { "field": "q43", "operator": "===", "value": "rent" } ,"mapping": "expenses.currentHousingCost"},
+      { "id": "q45", "label": "毎年かかる住宅費用(固定資産税等)", "type": "number", "condition": { "field": "q43", "operator": "===", "value": "own" } ,"mapping": "expenses.annualHousingCost"},
+      { "id": "q46", "label": "加入している掛け捨て型保険はありますか？（積立型保険は後の質問にある投資資産に記載ください。）", "type": "select", "options": "yes_no", "required": true },
+      {
+        "id": "insurance_group", "label": "保険の詳細", "type": "field_array", "mapping": "expenses.insuranceList",
+        "condition": { "field": "q46", "operator": "===", "value": "yes" },
+        "fields": [
+          { "id": "q47", "label": "保険の概要を教えてください。", "type": "text","mapping": "name" },
+          { "id": "q48", "label": "その保険は掛け捨て型ですか？積立型ですか？", "type": "text" ,"mapping": "type"},
+          { "id": "q49", "label": "加入者", "type": "select", "options": [{ "label": "自分", "value": "self" }, { "label": "配偶者", "value": "partner" }, { "label": "子供", "value": "child" }] ,"mapping": "subscriber"},
+          { "id": "q50", "label": "支払い開始年", "type": "select", "options": "year_range","mapping": "subscriptionYear" },
+          { "id": "q51", "label": "年間保険料", "type": "number","mapping": "initialYearlyCost" },
+          { "id": "q52", "label": "支払い終了年齢", "type": "select", "options": "age_range","mapping": "endAge" }
+        ]
+      },
+      { "id": "q53", "label": "今後保険加入予定はありますか？", "type": "select", "options": "yes_no"},
+      { "id": "q54", "label": "加入予定保険の希望", "type": "textarea", "condition": { "field": "q53", "operator": "===", "value": "yes" },"purpose": "qualitative","related": []  },
+      { "id": "q55", "label": "大きな支出イベントはありますか？", "type": "select", "options": "yes_no" },
+      {
+        "id": "event_group", "label": "ライフイベント詳細", "type": "field_array","mapping": "expenses.lifeEventList",
+        "condition": { "field": "q55", "operator": "===", "value": "yes" },
+        "fields": [
+          { "id": "q56", "label": "イベント名", "type": "text","mapping": "name" },
+          { "id": "q57", "label": "発生年(西暦)", "type": "select", "options": "future_year_range" ,"mapping": "year"},
+          { "id": "q58", "label": "支出額", "type": "number","mapping": "amount" }
+        ]
+      },
+      { "id": "q59", "label": "その他支出の考慮事項", "type": "textarea","purpose": "qualitative","related": []  }
+    ]
+  },
+  {
+    "step": 5,
+    "stepTitle": "資産・ローン",
+    "questions": [
+      { "id": "q60", "label": "現在の現金残高", "type": "number", "required": true,"mapping": "assets.currentCash" },
+      { "id": "q61", "label": "毎月の貯蓄額", "type": "number","mapping": "assets.planedSaving.currentMonthlyAmount" },
+      { "id": "q62", "label": "貯蓄を続ける年齢", "type": "select", "options": "age_range","mapping": "assets.planedSaving.endAge" },
+      { "id": "q63", "label": "現在の投資資産額", "type": "number","mapping": "assets.currentInvestments" },
+      { "id": "q64", "label": "毎月の投資額", "type": "number","mapping": "assets.planedInvestments.monthlyAmount" },
+      { "id": "q65", "label": "投資を続ける年齢", "type": "select", "options": "age_range","mapping": "assets.planedInvestments.endAge" },
+      { "id": "q66", "label": "その他資産の考慮事項", "type": "textarea","purpose": "qualitative","related": []  },
+      { "id": "q67", "label": "ローンはありますか？", "type": "select", "options": "yes_no", "required": true },
+      {
+        "id": "loan_group", "label": "ローンの詳細", "type": "field_array",
+        "condition": { "field": "q67", "operator": "===", "value": "yes" }, "mapping": "liabilities.loanList",
+        "fields": [
+          { "id": "q68", "label": "毎月の返済額", "type": "number","mapping": "monthlyRepaymentAmount" },
+          { "id": "q69", "label": "金利タイプ", "type": "radio", "options": [{ "label": "固定", "value": "fixed" }, { "label": "変動", "value": "variable" }],"mapping": "interestRateType" },
+          { "id": "q70", "label": "返済開始年", "type": "select", "options": "year_range","mapping": "repaymentStartYear" },
+          { "id": "q71", "label": "完済予定年", "type": "select", "options": "future_year_range","mapping": "endYear" }
+        ]
+      },
+      { "id": "q72", "label": "その他ローンの考慮事項", "type": "textarea","purpose": "qualitative","related": []  }
+    ]
+  },
+  {
+    "step": 6,
+    "stepTitle": "価値観",
+    "questions": [
+      { "id": "q73", "label": "資産目標額", "type": "number", "required": true },
+      { 
+        "id": "q74", "label": "FPのコメントスタンス", "type": "radio", 
+        "options": [{ "label": "優しく", "value": "kind" }, { "label": "標準", "value": "standard" }, { "label": "厳しく", "value": "strict" }] 
+        ,"purpose": "qualitative","related": []   
+      },
+      { 
+        "id": "q75", "label": "乖離がある場合の優先順位", "type": "radio", 
+        "options": [{ "label": "現状を改善", "value": "improve_now" }, { "label": "目標を見直す", "value": "adjust_goal" }] 
+        ,"purpose": "qualitative","related": []
+     }
+    ]
+  }
+]
