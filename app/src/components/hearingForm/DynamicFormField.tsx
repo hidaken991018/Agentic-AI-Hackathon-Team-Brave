@@ -98,7 +98,6 @@ function renderInput(
         </Select>
       );
     case "radio":
-      console.log("Rendering radio for question:", q);
       return (
         <RadioGroup
           onValueChange={field.onChange}

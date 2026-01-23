@@ -1,3 +1,5 @@
+import { ControllerRenderProps, FieldValues } from "react-hook-form";
+
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -5,8 +7,8 @@ export function DynamicRadioOptions({
   type,
   field,
 }: {
-  type: string;
-  field: any;
+  type: string | undefined;
+  field: ControllerRenderProps<FieldValues, string>;
 }) {
   // 教育オプションのデータ定義
   const eduOptions = [
