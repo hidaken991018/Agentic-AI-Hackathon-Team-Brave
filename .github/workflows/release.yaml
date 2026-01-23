@@ -20,6 +20,7 @@ jobs:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       GCP_ALLOWED_USERS: ${{ secrets.GCP_ALLOWED_USERS }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
   # --- Step 2: データベースマイグレーション ---
   migrate:
