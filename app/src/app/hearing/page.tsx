@@ -15,7 +15,7 @@ import {
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
 import { Step } from "@/schema/hearingFormSchema";
-import { HearingJsonInput } from "@/schema/hearingJsonSchema";
+import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
 
 export default function LifePlanStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
