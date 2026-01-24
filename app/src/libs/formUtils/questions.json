@@ -113,7 +113,7 @@
       { "id": "q42", "label": "お子様は何歳で独立すると想定しますか？", "type": "number", "required": true ,"mapping": "expenses.childIndependenceAge"},
       { "id": "q43", "label": "住宅は賃貸ですか？持ち家ですか？", "type": "radio", "options": [{ "label": "賃貸", "value": "rent" }, { "label": "持ち家", "value": "own" }], "required": true,"mapping": "expenses.housingType" },
       { "id": "q44", "label": "現在の住宅費（月額）はいくらですか？", "type": "number", "condition": { "field": "q43", "operator": "===", "value": "rent" } ,"mapping": "expenses.currentHousingCost"},
-      { "id": "q45", "label": "毎年かかる住宅費用(固定資産税等)", "type": "number", "condition": { "field": "q43", "operator": "===", "value": "own" } ,"mapping": "expenses.annualHousingCost"},
+      { "id": "q45", "label": "毎年かかる住宅費用(固定資産税等)", "type": "number", "condition": { "field": "q43", "operator": "===", "value": "own" } ,"mapping": "expenses.currentHousingCost"},
       { "id": "q46", "label": "加入している掛け捨て型保険はありますか？（積立型保険は後の質問にある投資資産に記載ください。）", "type": "select", "options": "yes_no", "required": true },
       {
         "id": "insurance_group", "label": "保険の詳細", "type": "field_array", "mapping": "expenses.insuranceList",
