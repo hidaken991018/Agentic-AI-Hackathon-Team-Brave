@@ -52,9 +52,9 @@ export const transformToApiPayload = (
     }
   };
 
-  questionsData.forEach((step) => {
-    step.questions.forEach((q: Question) => {
-      const rawValue = formData[q.id];
+  questionsData.forEach((step: { questions: any[] }) => {
+    step.questions.forEach((q: any) => {
+      const rawValue: any = formData[q.id];
 
       // --- 定性データの処理 ---
       addQualitative(q, rawValue);
@@ -133,11 +133,10 @@ export const setDeep = (obj: any, path: string, value: any) => {
 };
 
 export const generateDefaultValues = (questionsData: any) => {
-  const defaults: Record<string, string | number | boolean | null | string[]> =
-    {};
+  const defaults: Record<string, any> = {};
 
-  questionsData.forEach((step) => {
-    step.questions.forEach((q: Question) => {
+  questionsData.forEach((step: { questions: any[] }) => {
+    step.questions.forEach((q: any) => {
       if (q.type === "field_array") {
         // field_array の場合は必ず空配列 [] をセット
         defaults[q.id] = [];

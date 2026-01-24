@@ -1,17 +1,19 @@
 import { z } from "zod";
 
+import { Step } from "@/schema/hearingFormSchema";
+
 /**
  * JSONの型定義に合わせて動的にZodスキーマを生成する
  */
-export const generateZodSchema = (steps: any[]) => {
+export const generateZodSchema = (steps: Step[]) => {
   const schemaShape: Record<string, any> = {};
 
   steps.forEach((step) => {
-    step.questions.forEach((q: any) => {
+    step.questions.forEach((q) => {
       // 1. お子様などの「field_array」形式の場合
       if (q.type === "field_array") {
-        const itemShape: Record<string, any> = {};
-        q.fields.forEach((field: any) => {
+        const itemShape: Record<string, unknown> = {};
+        (q.fields ?? []).forEach((field: any) => {
           itemShape[field.id] = createZodField(field);
         });
         schemaShape[q.id] = z.array(z.object(itemShape));
@@ -44,8 +46,9 @@ function createZodField(field: any) {
       break;
     case "field_array":
       // 再帰的に中身のスキーマを作成
+
       const itemShape: Record<string, any> = {};
-      field.fields.forEach((f: any) => {
+      (field.fields ?? []).forEach((f: any) => {
         itemShape[f.id] = createZodField(f);
       });
       schema = z.array(z.object(itemShape));
