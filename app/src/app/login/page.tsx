@@ -2,6 +2,16 @@
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { login } from "@/libs/firebase/auth";
 
 /**
@@ -27,28 +37,43 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleLogin}>
-      <div>
-        Email：
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-        />
-      </div>
-      <br />
-      <div>
-        Password：
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-        />
-      </div>
-      <br />
-      <button type="submit">Login</button>
-    </form>
+    <div className="flex min-h-screen items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl">ログイン</CardTitle>
+          <CardDescription className="text-sm text-slate-500">
+            メールアドレスとパスワードを入力してください
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">メールアドレス</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="test@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">パスワード</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" variant="default">
+              ログイン
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }
