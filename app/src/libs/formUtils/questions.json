@@ -23,7 +23,7 @@
           { "id": "q07", "label": "誕生年", "type": "select", "options": "year_range", "required": true , "mapping": "birthYear"},
           { "id": "q08", "label": "未就学児の学費種別", "type": "radio", "options": "edu_options" , "mapping": "preschoolersType"},
           { "id": "q09", "label": "小学校の学費種別", "type": "radio", "options": "edu_options" , "mapping": 	"primarySchoolType"},
-          {	"id":"q10","label":"中学校の学費種別","type":"radio","options":"edu_options","mapping":"middleSchoolType"},
+          {	"id":"q10","label":"中学校の学費種別","type":"radio","options":"edu_options","mapping":"juniorHighSchoolType"},
           {	"id":"q11","label":"高校の学費種別","type":"radio","options":"edu_options","mapping":"highSchoolType"},
           { "id": "q12", "label": "大学の学費種別", "type": "radio", "options": "edu_options" , "mapping": "universityType" },
           { "id": "q13", "label": "大学院の学費種別", "type": "radio", "options": "edu_options" , "mapping": "graduateSchoolType" }

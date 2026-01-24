@@ -1,7 +1,7 @@
 import { Check } from "lucide-react"; // アイコン用
 
 import { Progress } from "@/components/ui/progress";
-import { Step } from "@/schema/hearingFromScheme";
+import { Step } from "@/schema/hearingFormSchema";
 
 interface StepBarProps {
   currentStep: number;

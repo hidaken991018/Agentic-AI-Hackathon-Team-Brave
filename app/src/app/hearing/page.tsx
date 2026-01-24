@@ -14,16 +14,17 @@ import {
   generateDefaultValues,
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
-import { Step } from "@/schema/hearingFromScheme";
+import { Step } from "@/schema/hearingFormSchema";
+import { HearingJsonInput } from "@/schema/hearingJsonSchema";
 
 export default function LifePlanStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const steps: Step[] = questionsData as Step[];
   const currentStepData = steps[currentStep];
 
-  const defaultValues = useMemo(
+  const defaultValues: Partial<HearingJsonInput> = useMemo(
     () => generateDefaultValues(questionsData),
-    [questionsData],
+    [],
   );
 
   // 1. スキーマとフォームの初期化
@@ -79,7 +80,6 @@ export default function LifePlanStepForm() {
               onSubmit(data);
             },
             (errors) => {
-              // 送信できない原因がここに出力されます
               console.error(
                 "バリデーションエラーで送信に失敗しました:",
                 errors,
@@ -88,7 +88,6 @@ export default function LifePlanStepForm() {
           )}
           className="space-y-8"
         >
-          {/* <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"> */}
           <Card className="border-t-primary border-t-4 p-6">
             <div className="space-y-6">
               {currentStepData.questions.map((q) => (
@@ -109,7 +108,7 @@ export default function LifePlanStepForm() {
               {isLastStep ? (
                 <Button
                   type="submit"
-                  className="bg-destructive hover:bg-destructive/90"
+                  className="bg-primary hover:bg-primary/90 text-white"
                 >
                   この内容で診断する
                 </Button>

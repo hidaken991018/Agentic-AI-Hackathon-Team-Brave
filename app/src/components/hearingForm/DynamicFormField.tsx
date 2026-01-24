@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Question, QuestionOption } from "@/schema/hearingFromScheme";
+import { Question, QuestionOption } from "@/schema/hearingFormSchema";
 
 import { DynamicOptions } from "./DynamicOptions";
 
@@ -92,7 +92,7 @@ function renderInput(
                 </SelectItem>
               ))
             ) : (
-              <DynamicOptions type={q.options!} />
+              <>{q.options && <DynamicOptions type={q.options} />}</>
             )}
           </SelectContent>
         </Select>

@@ -1,4 +1,4 @@
-import { Question } from "@/schema/hearingFromScheme";
+import { Question } from "@/schema/hearingFormSchema";
 
 // 入力データの基本単位
 type PrimitiveValue = string | number | boolean | null;

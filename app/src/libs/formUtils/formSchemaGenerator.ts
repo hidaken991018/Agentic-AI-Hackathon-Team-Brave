@@ -35,13 +35,14 @@ function createZodField(field: any) {
   // 1. 基本的な型の定義
   switch (field.type) {
     case "number":
-      schema = z.preprocess(
-        (val) => (val === "" ? undefined : Number(val)),
-        z.number({ invalid_type_error: "数字を入力してください" }),
-      );
+      schema = z
+        .preprocess(
+          (val) => (val === "" ? undefined : Number(val)),
+          z.number().catch(() => NaN),
+        )
+        .refine((val) => !isNaN(val), { message: "数字を入力してください" });
       break;
     case "field_array":
-      console.log("Creating field_array schema for field:", field);
       // 再帰的に中身のスキーマを作成
       const itemShape: Record<string, any> = {};
       field.fields.forEach((f: any) => {
