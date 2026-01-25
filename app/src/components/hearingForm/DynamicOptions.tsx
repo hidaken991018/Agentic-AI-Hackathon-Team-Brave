@@ -1,6 +1,11 @@
 import { SelectItem } from "@/components/ui/select";
+import { QuestionOption } from "@/schema/hearingFormSchema";
 
-export function DynamicOptions({ type }: { type: string }) {
+export function DynamicOptions({
+  type,
+}: {
+  type: string | readonly QuestionOption[];
+}) {
   const currentYear = new Date().getFullYear();
 
   switch (type) {

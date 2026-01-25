@@ -1,4 +1,5 @@
 "use client";
+import _ from "lodash";
 import { Plus, Trash2 } from "lucide-react";
 import {
   ControllerRenderProps,
@@ -25,20 +26,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Question, QuestionOption } from "@/schema/hearingFormSchema";
+import { FlexibleQuestion, QuestionOption } from "@/schema/hearingFormSchema";
 
 import { DynamicOptions } from "./DynamicOptions";
 
-export function DynamicFormField({ question }: { question: Question }) {
+export function DynamicFormField({ question }: { question: FlexibleQuestion }) {
   const { control, watch } = useFormContext();
+  // 1. Lodash で condition を取得
+  const condition = _.get(question, "condition");
 
-  // 条件判定ロジック
-  if (question.condition) {
-    const watchedValue = watch(question.condition.field);
-    if (watchedValue !== question.condition.value) return null;
+  if (condition) {
+    const watchedValue = watch(condition.field);
+    if (watchedValue !== condition.value) return null;
   }
 
-  // field_array（お子様情報など）の特殊処理
+  // 2. type をチェック（これは QuestionData の共通プロパティなので直接アクセス可）
   if (question.type === "field_array") {
     return <FieldArraySection question={question} />;
   }
@@ -46,15 +48,16 @@ export function DynamicFormField({ question }: { question: Question }) {
   return (
     <FormField
       control={control}
-      name={question.id}
+      name={question.id as string}
       render={({ field }) => (
         <FormItem className="space-y-3">
           <div className="flex items-center gap-2">
             <FormLabel className="text-base font-semibold">
               {question.label}
             </FormLabel>
-            {/* 必須・任意ラベルの表示 */}
-            {question.required ? (
+
+            {/* 3. required を安全に判定 */}
+            {_.get(question, "required") ? (
               <span className="bg-destructive text-destructive-foreground rounded px-1.5 py-0.5 text-[10px] font-bold">
                 必須
               </span>
@@ -71,10 +74,9 @@ export function DynamicFormField({ question }: { question: Question }) {
     />
   );
 }
-
 // 型に応じたUIパーツの切り替え
 function renderInput(
-  q: Question,
+  q: FlexibleQuestion,
   field: ControllerRenderProps<FieldValues, string>,
 ) {
   switch (q.type) {
@@ -123,7 +125,7 @@ function renderInput(
   }
 }
 
-function FieldArraySection({ question }: { question: Question }) {
+function FieldArraySection({ question }: { question: FlexibleQuestion }) {
   const { control } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -159,7 +161,7 @@ function FieldArraySection({ question }: { question: Question }) {
           </Button>
 
           <p className="text-primary text-sm font-medium">{index + 1} </p>
-          {question?.fields?.map((subQ: Question) => (
+          {question?.fields?.map((subQ: FlexibleQuestion) => (
             <DynamicFormField
               key={subQ.id}
               question={{ ...subQ, id: `${question.id}.${index}.${subQ.id}` }}

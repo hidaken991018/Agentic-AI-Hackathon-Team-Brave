@@ -1,104 +1,118 @@
-import { Question } from "@/schema/hearingFormSchema";
+import _ from "lodash"; // または import { get, set } from "lodash";
 
-// 入力データの基本単位
-type PrimitiveValue = string | number | boolean | null;
+import { FlexibleQuestion, QuestionsData } from "@/schema/hearingFormSchema";
+import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
 
-// field_array内の1行分のデータ（例: { "q06": "田中", "q07": "2020" }）
-type FieldRowData = Record<string, PrimitiveValue>;
-
-// フォーム全体のデータ（q01: string, children_group: FieldRowData[] など）
-type FormData = Record<string, PrimitiveValue | FieldRowData[] | unknown>;
+// 入力データの型定義
+export type LifePlanFormData = Record<
+  string,
+  string | string[] | number | undefined
+>;
 
 /**
  * フォーム回答から「計算用JSON」と「AI用定性リスト」を同時に生成する
  */
 export const transformToApiPayload = (
-  formData: FormData,
-  questionsData: any,
+  formData: LifePlanFormData,
+  questionsData: QuestionsData,
 ) => {
-  // 1. 計算用構造体（定量データ）の初期化
+  console.log("Transforming form data:", formData);
+  // 1. 定量データ
   const quantitativePayload = {
     meta: {
       hearingVersion: 2,
       answeredAt: new Date().toISOString(),
       currency: "万円",
     },
-  };
+  } as HearingJsonInput;
 
   // 2. AIアドバイス用の一覧（定性データ）
   const qualitativeList: {
     label: string;
-    answer: PrimitiveValue;
+    answer: string | number | string[] | undefined;
     related: string[];
   }[] = [];
 
-  // 定性データをリストに追加する補助関数
+  // 定性データをリストに追加する関数
   const addQualitative = (
-    q: Question,
-    value: PrimitiveValue | FieldRowData[],
+    q: FlexibleQuestion,
+    value: string | number | string[] | undefined,
     prefix: string = "",
   ) => {
+    // プロパティが存在しない可能性があるので _.get で取得
+    const purpose = _.get(q, "purpose");
+    const related = _.get(q, "related", []);
+
     if (
-      q.purpose === "qualitative" &&
+      purpose === "qualitative" &&
       value !== undefined &&
       value !== null &&
       value !== ""
     ) {
       qualitativeList.push({
         label: prefix ? `${prefix}: ${q.label}` : q.label,
-        answer: value as PrimitiveValue,
-        related: q.related || [],
+        answer: value,
+        related: [...related],
       });
     }
   };
-
-  questionsData.forEach((step: { questions: any[] }) => {
-    step.questions.forEach((q: any) => {
-      const rawValue: any = formData[q.id];
+  questionsData.forEach((step) => {
+    step.questions.forEach((q) => {
+      // Lodash の _.get を使用して値を取得
+      const rawValue = _.get(formData, q.id);
 
       // --- 定性データの処理 ---
-      addQualitative(q, rawValue);
+      addQualitative(q as FlexibleQuestion, rawValue);
 
       // --- 定量データのマッピング処理 ---
-      if (!q.mapping) return;
 
-      // A. 通常の質問
-      if (q.type !== "field_array") {
-        if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
-          const finalValue = q.type === "number" ? Number(rawValue) : rawValue;
-          setDeep(quantitativePayload, q.mapping, finalValue);
-        }
-      }
+      // Lodash の _.get を使用して値を取得
+      const mapping = _.get(q, "mapping");
+      // mapping がない、または値が空の場合はスキップ
+      if (!mapping) return;
 
-      // B. field_array（配列データ）
-      else if (q.type === "field_array") {
-        const formArray = (rawValue as FieldRowData[]) || [];
+      // --- A. field_array（配列データ） ---
+      if (q.type === "field_array") {
+        const formArray = (rawValue as string[]) || [];
 
         const transformedArray = formArray.map((item, index) => {
-          const obj: FieldRowData = {};
+          const obj = {};
 
-          q.fields?.forEach((subField: Question) => {
-            const subValue = item[subField.id];
+          // q.fields も存在しない可能性があるので _.get で安全に
+          const fields = _.get(q, "fields", []);
 
-            // 配列内の定性データを収集（例：「1件目の子どもの名前」）
+          fields.forEach((subField: FlexibleQuestion) => {
+            const subValue = _.get(item, subField.id);
+            const subMapping = _.get(subField, "mapping");
+
             addQualitative(subField, subValue, `${q.label}(${index + 1}件目)`);
 
-            // 配列内の定量データをマッピング
             if (
-              subField.mapping &&
+              subMapping &&
               subValue !== undefined &&
               subValue !== null &&
               subValue !== ""
             ) {
               const finalSubValue =
                 subField.type === "number" ? Number(subValue) : subValue;
-              setDeep(obj, subField.mapping, finalSubValue);
+
+              _.set(obj, subMapping, finalSubValue);
             }
           });
           return obj;
         });
 
-        setDeep(quantitativePayload, q.mapping, transformedArray);
+        _.set(quantitativePayload, mapping, transformedArray);
+      }
+
+      // B. 通常の質問
+      else {
+        if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
+          const finalValue = q.type === "number" ? Number(rawValue) : rawValue;
+
+          // Lodash の _.set でセット
+          _.set(quantitativePayload, mapping, finalValue);
+        }
       }
     });
   });
@@ -110,44 +124,18 @@ export const transformToApiPayload = (
 };
 
 /**
- * オブジェクトの指定したパスに値をセットする (lodash.set の代替)
- * 例: setDeep({}, "user.profile.name", "田中")
- * => { user: { profile: { name: "田中" } } }
- * @description 任意の深さのネストに対応するため、型を any にしています
+ * フォームの初期値を生成する (Lodash版)
  */
-export const setDeep = (obj: any, path: string, value: any) => {
-  const keys = path.split(".");
-  let current = obj;
+export const generateDefaultValues = (questionsData: QuestionsData) => {
+  const defaults = {};
 
-  keys.forEach((key, index) => {
-    if (index === keys.length - 1) {
-      current[key] = value;
-    } else {
-      if (!current[key]) {
-        current[key] = {};
-      }
-      current = current[key];
-    }
-  });
-  return obj;
-};
-
-export const generateDefaultValues = (questionsData: any) => {
-  const defaults: Record<string, any> = {};
-
-  questionsData.forEach((step: { questions: any[] }) => {
-    step.questions.forEach((q: any) => {
+  questionsData.forEach((step) => {
+    step.questions.forEach((q) => {
       if (q.type === "field_array") {
-        // field_array の場合は必ず空配列 [] をセット
-        defaults[q.id] = [];
-      } else if (q.type === "number") {
-        // 数値型は 0 か ""（スキーマのpreprocessで処理可能なら ""）
-        defaults[q.id] = "";
-      } else if (q.type === "radio" || q.type === "select") {
-        // 選択系は空文字
-        defaults[q.id] = "";
+        _.set(defaults, q.id, []);
       } else {
-        defaults[q.id] = "";
+        // number でも select でも、初期値は空文字 "" で統一
+        _.set(defaults, q.id, "");
       }
     });
   });

@@ -1,5 +1,6 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import _ from "lodash";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -8,22 +9,23 @@ import { StepBar } from "@/components/hearingForm/StepBar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
+import { CONSTS } from "@/consts";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
-import questionsData from "@/libs/formUtils/questions.json";
 import {
   generateDefaultValues,
+  LifePlanFormData,
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
-import { Step } from "@/schema/hearingFormSchema";
+import { FlexibleQuestion } from "@/schema/hearingFormSchema";
 import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
 
 export default function LifePlanStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
-  const steps: Step[] = questionsData as Step[];
+  const steps = CONSTS.QUESTIONS;
   const currentStepData = steps[currentStep];
 
   const defaultValues: Partial<HearingJsonInput> = useMemo(
-    () => generateDefaultValues(questionsData),
+    () => generateDefaultValues(CONSTS.QUESTIONS),
     [],
   );
 
@@ -32,7 +34,7 @@ export default function LifePlanStepForm() {
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues,
-    mode: "onChange", // 入力のたびにバリデーションを走らせる設定
+    mode: "onChange",
   });
 
   // 2. 次のステップへ進むハンドラー
@@ -42,9 +44,10 @@ export default function LifePlanStepForm() {
     // 現在のステップの中で、実際に「表示条件を満たしている」質問のIDだけを抽出
     const visibleFields = currentStepData.questions
       .filter((q) => {
-        if (!q.condition) return true;
+        const condition = _.get(q, "condition");
+        if (!condition) return true;
         // condition.value と現在の回答が一致するものだけをバリデーション対象にする
-        return currentValues[q.condition.field] === q.condition.value;
+        return currentValues[condition.field] === condition.value;
       })
       .map((q) => q.id);
 
@@ -58,10 +61,10 @@ export default function LifePlanStepForm() {
   };
 
   // 3. 最終送信のハンドラー
-  const onSubmit = (data: Record<string, unknown>) => {
+  const onSubmit = (data: LifePlanFormData) => {
     console.log("最終確定データ:", data);
     // 1. フォームのフラットなデータをAPI用ネスト構造に変換
-    const apiPayload = transformToApiPayload(data, questionsData);
+    const apiPayload = transformToApiPayload(data, CONSTS.QUESTIONS);
     console.log("API用ペイロード:", apiPayload);
     // ここで回答データを使った処理を行う
     alert("ライフプランの入力が完了しました！");
@@ -77,7 +80,7 @@ export default function LifePlanStepForm() {
         <form
           onSubmit={form.handleSubmit(
             (data) => {
-              onSubmit(data);
+              onSubmit(data as LifePlanFormData);
             },
             (errors) => {
               console.error(
@@ -91,7 +94,7 @@ export default function LifePlanStepForm() {
           <Card className="border-t-primary border-t-4 p-6">
             <div className="space-y-6">
               {currentStepData.questions.map((q) => (
-                <DynamicFormField key={q.id} question={q} />
+                <DynamicFormField key={q.id} question={q as FlexibleQuestion} />
               ))}
             </div>
 

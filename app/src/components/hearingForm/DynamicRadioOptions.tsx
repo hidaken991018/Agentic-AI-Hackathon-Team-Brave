@@ -2,12 +2,13 @@ import { ControllerRenderProps, FieldValues } from "react-hook-form";
 
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { QuestionOption } from "@/schema/hearingFormSchema";
 
 export function DynamicRadioOptions({
   type,
   field,
 }: {
-  type: string | undefined;
+  type: string | readonly QuestionOption[] | undefined;
   field: ControllerRenderProps<FieldValues, string>;
 }) {
   // 教育オプションのデータ定義
