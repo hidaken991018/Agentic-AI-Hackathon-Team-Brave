@@ -110,13 +110,14 @@ export default function LifePlanStepForm() {
 
               {isLastStep ? (
                 <Button
+                  key="submit-btn"
                   type="submit"
                   className="bg-primary hover:bg-primary/90 text-white"
                 >
                   この内容で診断する
                 </Button>
               ) : (
-                <Button type="button" onClick={handleNext}>
+                <Button key="next-btn" type="button" onClick={handleNext}>
                   次へ進む
                 </Button>
               )}
