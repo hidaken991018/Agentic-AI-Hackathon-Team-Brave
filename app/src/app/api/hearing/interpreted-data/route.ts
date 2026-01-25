@@ -1,0 +1,143 @@
+/**
+ * 解釈データ登録エンドポイント
+ *
+ * AIによる解釈が必要なデータを処理し、セッションに保存します。
+ *
+ * @module interpretedData
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  createErrorNextResponse,
+  handleInternalError,
+  handleServiceError,
+  handleSessionError,
+  handleValidationError,
+} from "@/libs/common/errorHandler";
+import {
+  addCorsHeaders,
+  handlePreflight,
+  withAuth,
+} from "@/middleware/authMiddleware";
+import { handleInterpretedData } from "@/services/hearing/agents/interpretedDataHandler";
+import { ErrorCode } from "@/services/hearing/schema/errorSchema";
+import {
+  interpretedDataRequestSchema,
+  interpretedDataResponseSchema,
+} from "@/services/hearing/schema/interpretedDataSchema";
+
+export const runtime = "nodejs";
+
+/**
+ * CORSプリフライトリクエストを処理します
+ * @param request - プリフライトリクエストオブジェクト
+ * @returns CORSヘッダー付きレスポンス
+ */
+export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+  return handlePreflight(request);
+}
+
+/**
+ * 解釈データを登録するPOSTエンドポイント
+ *
+ * AIによる解釈が必要なデータを処理し、セッションに保存します。
+ * 例: 資産運用の目標、リスク許容度の評価、ライフスタイルの希望
+ *
+ * リクエストボディ:
+ * - sessionId: string（必須）- 有効なセッションID
+ * - content: string（必須）- 解釈するユーザー入力内容（最大5000文字）
+ * - estimationTargets: string[]（任意）- 直接提供されない場合に推定する項目
+ * - outputSchema: JsonSchema（必須）- 構造化出力のスキーマ
+ *
+ * レスポンス:
+ * - success: boolean - 処理成功フラグ
+ * - sessionId: string - セッションID
+ * - structuredData: Record<string, unknown> - 解析された構造化データ
+ * - estimations: Record<string, Estimation> - 推定値と推論根拠
+ * - processedAt: string（ISO 8601形式）- 処理日時
+ *
+ * @param request - リクエストオブジェクト
+ * @returns 処理結果を含むレスポンス
+ */
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get("origin");
+
+  // 1. 認証チェック
+  const authResult = await withAuth(request);
+  if (!authResult.authenticated) {
+    return addCorsHeaders(authResult.response, origin);
+  }
+
+  // 2. リクエストボディの解析
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    const response = handleInternalError("リクエストボディのJSONが不正です");
+    return addCorsHeaders(response, origin);
+  }
+
+  // 3. リクエストボディのバリデーション
+  const parseResult = interpretedDataRequestSchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    const response = handleValidationError(parseResult.error);
+    return addCorsHeaders(response, origin);
+  }
+
+  // 4. ビジネスロジックを実行
+  const result = await handleInterpretedData(parseResult.data);
+
+  // 5. エラー処理
+  if (!result.success) {
+    let errorResponse: NextResponse;
+    switch (result.error.type) {
+      case "session":
+        errorResponse = handleSessionError(result.error.errorType);
+        break;
+      case "gemini":
+        errorResponse = handleServiceError(
+          "gemini",
+          result.error.originalError,
+        );
+        break;
+      case "service":
+        errorResponse = createErrorNextResponse({
+          code: ErrorCode.SERVICE_UNAVAILABLE,
+          message: result.error.message,
+          details: result.error.details,
+        });
+        break;
+      default:
+        // 予期しないエラータイプの場合のフォールバック
+        errorResponse = createErrorNextResponse({
+          code: ErrorCode.INTERNAL_ERROR,
+          message: "Unknown error type",
+        });
+        break;
+    }
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 6. レスポンス検証
+  const responseValidation = interpretedDataResponseSchema.safeParse(
+    result.data,
+  );
+  if (!responseValidation.success) {
+    console.error(
+      "[InterpretedData] レスポンス検証に失敗しました:",
+      responseValidation.error,
+    );
+    const errorResponse = createErrorNextResponse({
+      code: ErrorCode.INTERNAL_ERROR,
+      message: "レスポンス検証に失敗しました",
+    });
+    return addCorsHeaders(errorResponse, origin);
+  }
+
+  // 7. CORSヘッダー付きで成功レスポンスを返却
+  return addCorsHeaders(
+    NextResponse.json(responseValidation.data, { status: 200 }),
+    origin,
+  );
+}
