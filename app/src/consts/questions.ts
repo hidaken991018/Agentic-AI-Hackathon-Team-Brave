@@ -48,6 +48,7 @@ export const QUESTIONS = [
         id: "children_group",
         label: "お子様の情報",
         type: "field_array",
+        arrayLabelPrefix: "第{n}子",
         condition: { field: "q05", operator: "===", value: "yes" },
         mapping: "basicProfile.childList",
         fields: [
@@ -185,6 +186,7 @@ export const QUESTIONS = [
         id: "own_income_group",
         label: "あなたの継続収入",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目の収入",
         mapping: "income.user.stableIncomeList",
         fields: [
           {
@@ -228,6 +230,7 @@ export const QUESTIONS = [
         id: "own_extra_income_group",
         label: "あなたの一時収入詳細",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目の収入",
         mapping: "income.user.temporaryIncomeList",
         condition: { field: "q26", operator: "===", value: "yes" },
         fields: [
@@ -246,6 +249,7 @@ export const QUESTIONS = [
         id: "partner_income_group",
         label: "配偶者の継続収入",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目の収入",
         mapping: "income.partner.stableIncomeList",
         fields: [
           {
@@ -294,6 +298,7 @@ export const QUESTIONS = [
         id: "partner_extra_income_group",
         label: "配偶者の一時収入詳細",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目の収入",
         mapping: "income.partner.temporaryIncomeList",
         condition: { field: "q36", operator: "===", value: "yes" },
         fields: [
@@ -372,6 +377,7 @@ export const QUESTIONS = [
         id: "insurance_group",
         label: "保険の詳細",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目の保険",
         mapping: "expenses.insuranceList",
         condition: { field: "q46", operator: "===", value: "yes" },
         fields: [
@@ -444,6 +450,7 @@ export const QUESTIONS = [
         id: "event_group",
         label: "ライフイベント詳細",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目のイベント",
         mapping: "expenses.lifeEventList",
         condition: { field: "q55", operator: "===", value: "yes" },
         fields: [
@@ -528,6 +535,7 @@ export const QUESTIONS = [
         id: "loan_group",
         label: "ローンの詳細",
         type: "field_array",
+        arrayLabelPrefix: "{n}件目のローン",
         condition: { field: "q67", operator: "===", value: "yes" },
         mapping: "liabilities.loanList",
         fields: [

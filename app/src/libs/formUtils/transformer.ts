@@ -142,3 +142,28 @@ export const generateDefaultValues = (questionsData: QuestionsData) => {
 
   return defaults;
 };
+
+/**
+ * FieldArray 内の件数ラベルを動的に生成する
+ * @param parentQuestion - 親質問 (type: "field_array" のもの)
+ * @param index - 配列のインデックス (0開始)
+ * @returns 変換後のラベル文字列
+ */
+export const getDynamicArrayLabel = (
+  parentQuestion: FlexibleQuestion,
+  index: number,
+): string => {
+  const displayIndex = index + 1;
+
+  // arrayLabelPrefix が設定されている場合 (例: "第{n}子")
+  if (parentQuestion.arrayLabelPrefix) {
+    const prefix = parentQuestion.arrayLabelPrefix.replace(
+      "{n}",
+      displayIndex.toString(),
+    );
+    return `${prefix}`;
+  }
+
+  // 設定がない場合のデフォルト形式 (例: "1件目: 氏名")
+  return `${displayIndex}件目`;
+};

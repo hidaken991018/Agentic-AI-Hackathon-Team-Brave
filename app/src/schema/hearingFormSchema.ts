@@ -9,32 +9,6 @@ export type QuestionOption = {
 // フォームで扱う可能性のあるプリミティブ値に限定
 export type FieldValue = string | number | boolean | null;
 
-// 質問の型定義
-export type Question = {
-  id: string;
-  label: string;
-  type: "text" | "number" | "select" | "radio" | "textarea" | "field_array";
-  required?: boolean;
-  options?: QuestionOption[] | string; // 文字列の場合は "year_range" などのキーワード
-  mapping?: string; // Zodスキーマへのパス
-  condition?: {
-    field: string;
-    operator: "===" | "!==";
-    value: FieldValue | FieldValue[];
-  };
-  // field_array の場合のみ、その中の質問リストを持つ
-  fields?: Question[];
-  purpose?: "quantitative" | "qualitative";
-  related?: string[];
-};
-
-// ステップの型定義
-export type Step = {
-  step: number;
-  stepTitle: string;
-  questions: Question[];
-};
-
 // QUESTIONSから型を抽出
 export type QuestionsData = typeof CONSTS.QUESTIONS;
 
@@ -54,6 +28,7 @@ export interface FlexibleQuestion {
   label: string; // 特定の一文ではなく string 全般
   type: string; // "text" | "number" ... などのリテラルではなく string
   required?: boolean;
+  arrayLabelPrefix?: string;
   options?: string | readonly QuestionOption[];
   mapping?: string;
   condition?: {

@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getDynamicArrayLabel } from "@/libs/formUtils/transformer";
 import { FlexibleQuestion, QuestionOption } from "@/schema/hearingFormSchema";
 
 import { DynamicOptions } from "./DynamicOptions";
@@ -160,7 +161,9 @@ function FieldArraySection({ question }: { question: FlexibleQuestion }) {
             <Trash2 className="h-4 w-4" />
           </Button>
 
-          <p className="text-primary text-sm font-medium">{index + 1} </p>
+          <p className="text-primary text-sm font-medium">
+            {getDynamicArrayLabel(question as FlexibleQuestion, index)}
+          </p>
           {question?.fields?.map((subQ: FlexibleQuestion) => (
             <DynamicFormField
               key={subQ.id}
