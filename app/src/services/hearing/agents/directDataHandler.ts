@@ -2,12 +2,12 @@
  * 直接データハンドラー
  *
  * ユーザーから直接入力されたデータを受け取り、セッションに保存するためのハンドラーモジュール。
- * 新規セッションの作成または既存セッションへのデータ追加を行い、データをAgent Engine Sessionsに格納する。
+ * 既存セッションへのデータ追加を行い、データをAgent Engine Sessionsに格納する。
  *
  * @module directDataHandler
  */
 
-import { appendSessionData, createSession } from "@/libs/google/sessionManager";
+import { appendSessionData } from "@/libs/google/sessionManager";
 import {
   type DirectDataRequest,
   type DirectDataResponse,
@@ -35,9 +35,8 @@ export type DirectDataHandlerResult =
  * 直接データ受信のビジネスロジックを処理する
  *
  * 処理フロー:
- * 1. sessionIdが指定されていない場合は新規セッションを作成
- * 2. リトライ機能付きでAgent Engine Sessionsに直接データを保存
- * 3. sessionIdとタイムスタンプを含むデータを返却
+ * 1. リトライ機能付きでAgent Engine Sessionsに直接データを保存
+ * 2. sessionIdとタイムスタンプを含むデータを返却
  *
  * 注意: REST API では期限切れセッションが自動削除されるため、
  *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
@@ -48,26 +47,8 @@ export type DirectDataHandlerResult =
 export async function handleDirectData(
   request: DirectDataRequest,
 ): Promise<DirectDataHandlerResult> {
-  // 1. セッション処理: 新規作成または既存セッション ID を使用
-  let sessionId: string;
-
-  if (request.sessionId) {
-    sessionId = request.sessionId;
-  } else {
-    // 新規セッションの作成
-    const createResult = await createSession(request.userId);
-    if (!createResult.ok) {
-      return {
-        success: false,
-        error: {
-          type: "service",
-          message: "セッションの作成に失敗しました",
-          details: createResult.error.message,
-        },
-      };
-    }
-    sessionId = createResult.value;
-  }
+  // 1. セッション ID を取得
+  const sessionId = request.sessionId;
 
   // 一連の操作で使用する invocationId を固定
   const invocationId = "hearing";

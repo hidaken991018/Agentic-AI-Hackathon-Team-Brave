@@ -7,6 +7,7 @@
  * @module authMiddleware
  */
 
+import { DecodedIdToken } from "firebase-admin/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 import { handleAuthError } from "@/libs/common/errorHandler";
@@ -28,19 +29,21 @@ const ALLOWED_ORIGINS = [
  * 匿名認証を含むすべてのプロバイダをサポートします。
  *
  * @param token - JWT トークン文字列
- * @returns 有効な場合 true、無効な場合 false
+ * @returns デコードされたトークン、または null（無効な場合）
  */
-async function validateFirebaseToken(token: string): Promise<boolean> {
+async function validateFirebaseToken(
+  token: string,
+): Promise<DecodedIdToken | null> {
   try {
     const decodedToken = await getAdminAuth().verifyIdToken(token);
     console.log(
       "[Auth] トークン検証成功。プロバイダ:",
       decodedToken.firebase?.sign_in_provider || "unknown",
     );
-    return true;
+    return decodedToken;
   } catch (error) {
     console.error("[Auth] トークン検証エラー:", error);
-    return false;
+    return null;
   }
 }
 
@@ -74,14 +77,29 @@ function isOriginAllowed(origin: string | null): boolean {
 }
 
 /**
+ * 認証オプション
+ */
+export interface AuthOptions {
+  /**
+   * 匿名ユーザーを許可するか
+   * @default true
+   */
+  allowAnonymous?: boolean;
+}
+
+/**
  * 認証結果型
  *
- * - authenticated: true → 認証成功
+ * - authenticated: true → 認証成功、トークン情報付き
  * - authenticated: false → 認証失敗、エラーレスポンス付き
  */
-export type AuthResult =
-  | { authenticated: true }
-  | { authenticated: false; response: NextResponse };
+export interface AuthResult {
+  authenticated: boolean;
+  response?: NextResponse;
+  decodedToken?: DecodedIdToken;
+  userId?: string;
+  isAnonymous?: boolean;
+}
 
 /**
  * Firebase Authentication トークンを検証するミドルウェア
@@ -89,9 +107,13 @@ export type AuthResult =
  * 匿名認証をサポートします。
  *
  * @param request - Next.js リクエストオブジェクト
+ * @param options - 認証オプション
  * @returns 認証結果
  */
-export async function withAuth(request: NextRequest): Promise<AuthResult> {
+export async function withAuth(
+  request: NextRequest,
+  options: AuthOptions = { allowAnonymous: true },
+): Promise<AuthResult> {
   // CORS チェック
   const origin = request.headers.get("origin");
   if (!isOriginAllowed(origin)) {
@@ -115,15 +137,42 @@ export async function withAuth(request: NextRequest): Promise<AuthResult> {
   }
 
   // トークンを検証
-  const isValid = await validateFirebaseToken(token);
-  if (!isValid) {
+  const decodedToken = await validateFirebaseToken(token);
+  if (!decodedToken) {
     return {
       authenticated: false,
       response: handleAuthError(),
     };
   }
 
-  return { authenticated: true };
+  // 匿名ユーザー判定
+  const isAnonymous = decodedToken.firebase?.sign_in_provider === "anonymous";
+
+  // 匿名ユーザーチェック
+  if (isAnonymous && !options.allowAnonymous) {
+    console.warn("[Auth] メール認証が必要です");
+    return {
+      authenticated: false,
+      response: new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "Email authentication required",
+          code: "EMAIL_AUTH_REQUIRED",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    };
+  }
+
+  return {
+    authenticated: true,
+    decodedToken,
+    userId: decodedToken.uid,
+    isAnonymous,
+  };
 }
 
 /**

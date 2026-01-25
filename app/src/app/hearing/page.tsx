@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { CONSTS } from "@/consts";
+import { useAuth } from "@/context/AuthContext";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
 import {
   generateDefaultValues,
@@ -23,6 +24,7 @@ export default function LifePlanStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const steps = CONSTS.QUESTIONS;
   const currentStepData = steps[currentStep];
+  const { user, isAnonymous } = useAuth();
 
   const defaultValues: Partial<HearingJsonInput> = useMemo(
     () => generateDefaultValues(CONSTS.QUESTIONS),
@@ -62,10 +64,12 @@ export default function LifePlanStepForm() {
 
   // 3. 最終送信のハンドラー
   const onSubmit = (data: LifePlanFormData) => {
-    console.log("最終確定データ:", data);
+    console.log("[Hearing] 最終確定データ:", data);
+    console.log("[Hearing] User ID:", user?.uid);
+    console.log("[Hearing] Is Anonymous:", isAnonymous);
     // 1. フォームのフラットなデータをAPI用ネスト構造に変換
     const apiPayload = transformToApiPayload(data, CONSTS.QUESTIONS);
-    console.log("API用ペイロード:", apiPayload);
+    console.log("[Hearing] API用ペイロード:", apiPayload);
     // ここで回答データを使った処理を行う
     alert("ライフプランの入力が完了しました！");
   };
