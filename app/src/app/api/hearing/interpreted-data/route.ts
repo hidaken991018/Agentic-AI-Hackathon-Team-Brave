@@ -66,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // 1. 認証チェック
   const authResult = await withAuth(request);
   if (!authResult.authenticated) {
-    return addCorsHeaders(authResult.response, origin);
+    return addCorsHeaders(authResult.response!, origin);
   }
 
   // 2. リクエストボディの解析
