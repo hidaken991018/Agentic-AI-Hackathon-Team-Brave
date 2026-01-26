@@ -99,7 +99,7 @@ describe("transformToApiPayload - 詳細構造テスト", () => {
       ],
     } as unknown as LifePlanFormData;
 
-    const { calculatedData, aiContext } = transformToApiPayload(
+    const { calculatedData } = transformToApiPayload(
       formData,
       mockQuestionsData,
     );
