@@ -22,11 +22,22 @@ resource "google_cloud_run_v2_service" "front_back_app" {
 
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello" # 実際は自身のイメージを指定
-      
+
       # 必要に応じてDB接続用の環境変数を追加
       env {
         name  = "DB_CONNECTION_NAME"
         value = google_sql_database_instance.main_db.connection_name
+      }
+
+      # Firestore データベースID（Secret Managerから取得）
+      env {
+        name = "FIRESTORE_DATABASE_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["FIRESTORE_DATABASE_ID"].secret_id
+            version = "latest"
+          }
+        }
       }
     }
   }
