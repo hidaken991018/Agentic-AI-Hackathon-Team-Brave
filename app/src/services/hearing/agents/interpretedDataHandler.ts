@@ -21,6 +21,15 @@ import {
 } from "@/services/hearing/schema/interpretedDataSchema";
 
 /**
+ * 認証情報を含む解釈データリクエスト型
+ *
+ * API ルートから渡される、userId を含むリクエストデータ
+ */
+export type InterpretedDataRequestWithAuth = InterpretedDataRequest & {
+  userId: string;
+};
+
+/**
  * ハンドラーエラーの型定義
  *
  * セッション関連エラー、サービスエラー、Agent Engineエラー、Geminiエラーを区別する
@@ -203,11 +212,11 @@ function parseGeminiResponse(responseText: string): {
  * 注意: REST API では期限切れセッションが自動削除されるため、
  *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
  *
- * @param request - 検証済みのリクエストボディ
+ * @param request - 検証済みのリクエストボディ（userId を含む）
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleInterpretedData(
-  request: InterpretedDataRequest,
+  request: InterpretedDataRequestWithAuth,
 ): Promise<InterpretedDataHandlerResult> {
   const sessionId = request.sessionId;
   const estimationTargets = request.estimationTargets;

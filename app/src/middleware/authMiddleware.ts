@@ -23,12 +23,27 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean) as string[];
 
 /**
- * Firebase Authentication トークンを検証
+ * Authorization ヘッダーから Bearer トークンを抽出
  *
- * Firebase Admin SDK を使用してトークンを検証します。
+ * @param authHeader - Authorization ヘッダーの値
+ * @returns Bearer トークン、または null
+ */
+function extractBearerToken(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0].toLowerCase() !== "bearer") {
+    return null;
+  }
+  return parts[1];
+}
+
+/**
+ * Firebase ID トークンを検証
+ *
+ * Firebase Admin SDK を使用して ID トークンを検証します。
  * 匿名認証を含むすべてのプロバイダをサポートします。
  *
- * @param token - JWT トークン文字列
+ * @param token - Firebase ID トークン
  * @returns デコードされたトークン、または null（無効な場合）
  */
 async function validateFirebaseToken(
@@ -45,23 +60,6 @@ async function validateFirebaseToken(
     console.error("[Auth] トークン検証エラー:", error);
     return null;
   }
-}
-
-/**
- * Authorization ヘッダーから Bearer トークンを抽出
- *
- * @param authHeader - Authorization ヘッダーの値
- * @returns トークン文字列、または null
- */
-function extractBearerToken(authHeader: string | null): string | null {
-  if (!authHeader) return null;
-
-  const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0].toLowerCase() !== "bearer") {
-    return null;
-  }
-
-  return parts[1];
 }
 
 /**
@@ -102,9 +100,10 @@ export interface AuthResult {
 }
 
 /**
- * Firebase Authentication トークンを検証するミドルウェア
+ * Firebase Authentication ID トークンを検証するミドルウェア
  *
  * 匿名認証をサポートします。
+ * Authorization: Bearer {idToken} 形式でトークンを受け取ります。
  *
  * @param request - Next.js リクエストオブジェクト
  * @param options - 認証オプション
@@ -124,7 +123,7 @@ export async function withAuth(
     };
   }
 
-  // トークンを抽出
+  // Authorization ヘッダーから Bearer トークンを取得
   const authHeader = request.headers.get("authorization");
   const token = extractBearerToken(authHeader);
 
@@ -136,7 +135,7 @@ export async function withAuth(
     };
   }
 
-  // トークンを検証
+  // ID トークンを検証
   const decodedToken = await validateFirebaseToken(token);
   if (!decodedToken) {
     return {
@@ -189,7 +188,10 @@ export function addCorsHeaders(
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     response.headers.set("Access-Control-Allow-Origin", origin);
   }
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET, POST, DELETE, OPTIONS",
+  );
   response.headers.set(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization",

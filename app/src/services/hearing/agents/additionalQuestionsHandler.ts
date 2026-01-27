@@ -27,6 +27,15 @@ import {
 const MAX_QUESTION_ROUNDS = 3;
 
 /**
+ * 認証情報を含む追加質問リクエスト型
+ *
+ * API ルートから渡される、userId を含むリクエストデータ
+ */
+export type AdditionalQuestionsRequestWithAuth = AdditionalQuestionsRequest & {
+  userId: string;
+};
+
+/**
  * ハンドラーエラーの型定義
  *
  * セッション関連エラー、Agent Engineエラー、Geminiエラーを区別する
@@ -221,11 +230,11 @@ function convertToQuestions(generatedQuestions: GeneratedQuestion[]): Question[]
  * 4. データが十分な場合はhearing_completedを返却
  * 5. データが不十分または矛盾がある場合は生成された質問を返却
  *
- * @param request - 検証済みのリクエストボディ
+ * @param request - 検証済みのリクエストボディ（userId を含む）
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleAdditionalQuestions(
-  request: AdditionalQuestionsRequest,
+  request: AdditionalQuestionsRequestWithAuth,
 ): Promise<AdditionalQuestionsHandlerResult> {
   // 1. 質問回数が最大値を超えているかチェック - 強制完了
   const currentQuestionCount = request.questionCount;

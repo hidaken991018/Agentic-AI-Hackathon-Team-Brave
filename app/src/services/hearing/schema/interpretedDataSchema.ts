@@ -47,15 +47,12 @@ export type JsonSchema = z.infer<typeof jsonSchemaSchema>;
 /**
  * 解釈データ API リクエストスキーマ
  *
- * @property userId - ユーザー ID（必須）
  * @property sessionId - セッション ID（必須）
  * @property content - 自由記述テキスト（最大5000文字）
  * @property estimationTargets - 推定対象項目（必須、1つ以上）
  * @property outputSchema - Gemini 構造化出力スキーマ（必須）
  */
 export const interpretedDataRequestSchema = z.object({
-  /** ユーザー ID（必須） */
-  userId: z.string().min(1, { message: "userId は必須です" }),
   /** セッション ID（必須） */
   sessionId: z.string(),
   /** 自由記述テキスト */

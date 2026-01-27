@@ -14,6 +14,15 @@ import {
 } from "@/services/hearing/schema/directDataSchema";
 
 /**
+ * 認証情報を含む直接データリクエスト型
+ *
+ * API ルートから渡される、userId を含むリクエストデータ
+ */
+export type DirectDataRequestWithAuth = DirectDataRequest & {
+  userId: string;
+};
+
+/**
  * ハンドラーエラーの型定義
  *
  * セッション関連エラーとサービスエラーを区別する
@@ -41,11 +50,11 @@ export type DirectDataHandlerResult =
  * 注意: REST API では期限切れセッションが自動削除されるため、
  *       セッションの事前検証は行わず、appendSessionData の失敗で判定します。
  *
- * @param request - 検証済みのリクエストボディ
+ * @param request - 検証済みのリクエストボディ（userId を含む）
  * @returns ハンドラー処理結果（成功時はデータ、失敗時はエラー情報）
  */
 export async function handleDirectData(
-  request: DirectDataRequest,
+  request: DirectDataRequestWithAuth,
 ): Promise<DirectDataHandlerResult> {
   // 1. セッション ID を取得
   const sessionId = request.sessionId;

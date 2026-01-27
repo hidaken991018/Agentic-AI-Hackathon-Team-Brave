@@ -50,13 +50,10 @@ const dataObjectSchema = z
 /**
  * 直接データ API リクエストスキーマ
  *
- * @property userId - ユーザー ID
  * @property sessionId - セッション ID（必須）
  * @property data - 保存する直接データ（キー・バリュー形式）
  */
 export const directDataRequestSchema = z.object({
-  /** ユーザー ID（セッション作成時に必須） */
-  userId: z.string().min(1, "ユーザー ID は必須です"),
   /** セッション ID（必須） */
   sessionId: z.string().min(1, "セッション ID は必須です"),
   /** 保存する直接データ */

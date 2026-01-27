@@ -63,11 +63,13 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const origin = request.headers.get("origin");
 
-  // 1. 認証チェック
+  // 1. 認証チェック（Authorization: Bearer から）
   const authResult = await withAuth(request);
   if (!authResult.authenticated) {
     return addCorsHeaders(authResult.response!, origin);
   }
+
+  const userId = authResult.userId!; // 認証トークンから取得
 
   // 2. リクエストボディの解析
   let rawBody: unknown;
@@ -78,18 +80,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return addCorsHeaders(response, origin);
   }
 
-  // 3. リクエストボディのバリデーション
+  // 3. リクエストボディのバリデーション（userId なし）
   const parseResult = interpretedDataRequestSchema.safeParse(rawBody);
   if (!parseResult.success) {
     const response = handleValidationError(parseResult.error);
     return addCorsHeaders(response, origin);
   }
 
-  // 4. ビジネスロジックを実行
-  const result = await handleInterpretedData(parseResult.data);
+  // 4. ビジネスロジックを実行（認証済み userId を追加）
+  const result = await handleInterpretedData({
+    ...parseResult.data,
+    userId, // 認証トークンから取得した userId を使用
+  });
 
   // 5. エラー処理
   if (!result.success) {
+
     let errorResponse: NextResponse;
     switch (result.error.type) {
       case "session":
