@@ -1,6 +1,6 @@
 # --- データベース (Firestore) ---
 resource "google_firestore_database" "database" {
-  name        = "(default)"
+  name        = "life-compass"
   location_id = "asia-northeast1"
   type        = "FIRESTORE_NATIVE"
 
