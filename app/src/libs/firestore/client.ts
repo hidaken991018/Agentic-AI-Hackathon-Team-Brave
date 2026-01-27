@@ -1,7 +1,14 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { Firestore, getFirestore } from "firebase-admin/firestore";
+import {
+  Firestore,
+  getFirestore,
+  Timestamp,
+  DocumentReference,
+} from "firebase-admin/firestore";
 
 import { isGCP } from "@/config";
+
+export { Timestamp };
 
 /**
  * Firestore クライアント（サーバーサイド用）
@@ -111,4 +118,70 @@ export function getDocument(
 ) {
   const db = getFirestoreClient(databaseId);
   return db.collection(collectionName).doc(docId);
+}
+
+/**
+ * TTL用の有効期限タイムスタンプを生成
+ *
+ * @param ttlSeconds 有効期限（秒）
+ * @returns Firestore Timestamp
+ */
+export function createExpireAt(ttlSeconds: number): Timestamp {
+  const expireDate = new Date(Date.now() + ttlSeconds * 1000);
+  return Timestamp.fromDate(expireDate);
+}
+
+/**
+ * TTL付きでドキュメントを追加
+ *
+ * @param collectionName コレクション名
+ * @param data ドキュメントデータ
+ * @param ttlSeconds 有効期限（秒）。省略時はTTLなし
+ * @param databaseId データベースID（省略可）
+ * @returns 作成されたドキュメントの参照
+ */
+export async function addDocumentWithTTL<T extends Record<string, unknown>>(
+  collectionName: string,
+  data: T,
+  ttlSeconds?: number,
+  databaseId?: string,
+): Promise<DocumentReference> {
+  const collection = getCollection(collectionName, databaseId);
+
+  const docData = {
+    ...data,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    ...(ttlSeconds ? { expireAt: createExpireAt(ttlSeconds) } : {}),
+  };
+
+  return collection.add(docData);
+}
+
+/**
+ * TTL付きでドキュメントを設定（上書き/マージ）
+ *
+ * @param collectionName コレクション名
+ * @param docId ドキュメントID
+ * @param data ドキュメントデータ
+ * @param ttlSeconds 有効期限（秒）。省略時はTTLなし
+ * @param databaseId データベースID（省略可）
+ */
+export async function setDocumentWithTTL<T extends Record<string, unknown>>(
+  collectionName: string,
+  docId: string,
+  data: T,
+  ttlSeconds?: number,
+  databaseId?: string,
+): Promise<void> {
+  const docRef = getDocument(collectionName, docId, databaseId);
+
+  const docData = {
+    ...data,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    ...(ttlSeconds ? { expireAt: createExpireAt(ttlSeconds) } : {}),
+  };
+
+  await docRef.set(docData, { merge: true });
 }
