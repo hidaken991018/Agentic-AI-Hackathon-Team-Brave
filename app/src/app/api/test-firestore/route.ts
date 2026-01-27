@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { getCollection } from "@/libs/firestore";
+import { addDocumentWithTTL, getCollection } from "@/libs/firestore";
 
 /**
  * Firestore 接続テスト用API（開発用）
  *
  * GET: ドキュメント一覧を取得
- * POST: 新規ドキュメントを作成
+ * POST: 新規ドキュメントを作成（TTL対応）
+ *   - ttl: 有効期限（秒）。省略時はTTLなし
  */
 
 export async function GET(request: Request) {
@@ -15,7 +16,10 @@ export async function GET(request: Request) {
     const collectionName = searchParams.get("collection") || "test";
 
     const collection = getCollection(collectionName);
-    const snapshot = await collection.orderBy("createdAt", "desc").limit(50).get();
+    const snapshot = await collection
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
 
     const documents = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -43,18 +47,21 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const collectionName = searchParams.get("collection") || "test";
+    const ttlParam = searchParams.get("ttl");
+    const ttlSeconds = ttlParam ? parseInt(ttlParam, 10) : undefined;
+
     const body = await request.json();
 
-    const collection = getCollection(collectionName);
-    const docRef = await collection.add({
-      ...body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    const docRef = await addDocumentWithTTL(
+      collectionName,
+      body,
+      ttlSeconds,
+    );
 
     return NextResponse.json({
       success: true,
       documentId: docRef.id,
+      ttl: ttlSeconds ? `${ttlSeconds}秒後に自動削除` : "TTLなし",
     });
   } catch (error) {
     console.error("Firestore POST error:", error);

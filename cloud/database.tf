@@ -7,6 +7,18 @@ resource "google_firestore_database" "database" {
   depends_on = [google_project_service.required_apis]
 }
 
+# Firestore TTL ポリシー（テスト用セッションコレクション）
+# expireAt フィールドの日時を過ぎたドキュメントを自動削除
+resource "google_firestore_field" "session_tests_ttl" {
+  database   = google_firestore_database.database.name
+  collection = "session_tests"
+  field      = "expireAt"
+
+  ttl_config {}
+
+  depends_on = [google_firestore_database.database]
+}
+
 # --- データベース (Cloud SQL: PostgreSQL) ---
 resource "google_sql_database_instance" "main_db" {
   name             = "life-compass-postgres"
