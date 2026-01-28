@@ -20,11 +20,23 @@ jobs:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       GCP_ALLOWED_USERS: ${{ secrets.GCP_ALLOWED_USERS }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
-  # --- Step 2: アプリケーションをデプロイ ---
-  deploy:
-    name: "2. App Deploy"
+  # --- Step 2: データベースマイグレーション ---
+  migrate:
+    name: "2. Database Migration"
     needs: terraform # Terraform 完了後に実行
+    uses: ./.github/workflows/db-migrate.yaml
+    secrets:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # --- Step 3: アプリケーションをデプロイ ---
+  deploy:
+    name: "3. App Deploy"
+    needs: migrate # Migration 完了後に実行
     uses: ./.github/workflows/app-deploy.yaml
     secrets:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
