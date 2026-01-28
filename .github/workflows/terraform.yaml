@@ -11,6 +11,8 @@ on:
         required: true
       GCP_ALLOWED_USERS:
         required: true
+      DB_PASSWORD:
+        required: true
 
 # Workload Identity 連携に必要な権限設定
 permissions:
@@ -29,6 +31,7 @@ jobs:
       # GitHub SecretsからプロジェクトIDをTerraform変数に渡す
       TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
       TF_VAR_allowed_users: ${{ secrets.GCP_ALLOWED_USERS }}
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
 
     steps:
       # 1. コードのチェックアウト

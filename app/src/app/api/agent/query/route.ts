@@ -1,12 +1,13 @@
-// app/api/agent/query/route.ts
 export const runtime = "nodejs";
+
+import { promises as fs } from "node:fs";
 
 import { fpInstructor } from "@/agents/fpInstructor";
 import { jsonEditor } from "@/agents/jsonEditor";
 import { createSessionId } from "@/libs/google/createSessionId";
 import { getAccessToken } from "@/libs/google/getAccessToken";
+import { hearingJsonSchemaForLlm } from "@/schema/hearingJson/hearingJsonSchema";
 import { aiCommentJsonSchemaForLlm } from "@/schema/aiCommentJsonSchema";
-import { hearingJsonSchemaForLlm } from "@/schema/hearingJsonSchema";
 
 type Body = {
   userId: string;
@@ -27,8 +28,8 @@ export async function POST(req: Request) {
     ? usedSessionId
     : await createSessionId(userId);
 
-  // === FP AI によるLife Compassの生成 ===
- const requestToAi = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
+  // === FP AI によるJson更新指示の生成 ===
+   const requestToAi = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
 
   ### 各項目の作成ルール
   1. commentList:
@@ -47,16 +48,18 @@ export async function POST(req: Request) {
 
   const aijsonResponse = await jsonEditor(aiCommentJsonSchemaForLlm, requestToAi);
 
-  const fpAiStart = Date.now();
+  const fpAiInstructionStart = Date.now();
   const instructions = await fpInstructor(
     accessToken,
     userId,
     sessionId,
-    requestToAi,
+    promptInstructToJsonEditor,
     userMessage,
   );
   console.log("==============================");
-  console.log(`FP AI の処理結果（process time: ${Date.now() - fpAiStart}）`);
+  console.log(
+    `FP AI （Json更新指示）の処理結果（process time: ${Date.now() - fpAiInstructionStart}）`,
+  );
   console.log("-----");
   console.log(instructions);
   console.log("==============================");
@@ -70,6 +73,45 @@ export async function POST(req: Request) {
   );
   console.log("-----");
   console.log(response);
+  console.log("==============================");
+
+  // === ライフプラン表の作成 ===
+
+  // TODO input: ヒアリングJSON, output: ライフプランJSON
+  // TODO input: ライフプランJSON, output: ライフプランTSV
+
+  // === FP AI によるライフプランの生成 ===
+
+  const tsvPath = "dst/lifeplan_normalized_long.tsv";
+  const tsv = await fs.readFile(tsvPath, "utf-8");
+
+  //
+  const promptRequestFPCommentToLifePlan = [
+    "以下にライフプラン表を表すTSVデータがあります。",
+    "TSVはタブ区切りで、1行目はヘッダーです。",
+    "ライフプラン表とヒアリング内容を鑑みて、FPとしての評価及びユーザーが行うべきネクストアクションを提示してください。",
+    "",
+    "```tsv",
+    tsv.trimEnd(), // 末尾改行の暴発防止
+    "```",
+  ].join("\n");
+
+  console.log(promptRequestFPCommentToLifePlan);
+
+  const fpAiCommentStart = Date.now();
+  const comment = await fpInstructor(
+    accessToken,
+    userId,
+    sessionId,
+    promptRequestFPCommentToLifePlan,
+    userMessage,
+  );
+  console.log("==============================");
+  console.log(
+    `FP AI (コメント)の処理結果（process time: ${Date.now() - fpAiCommentStart}）`,
+  );
+  console.log("-----");
+  console.log(comment);
   console.log("==============================");
 
   // === レスポンス ===

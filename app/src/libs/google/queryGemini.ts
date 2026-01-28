@@ -1,17 +1,31 @@
 import { GoogleGenAI } from "@google/genai";
 
+import { getEnv } from "@/config";
 import { CONSTS } from "@/consts";
 
-const ai = new GoogleGenAI({
-  vertexai: true,
-  project: process.env.GCP_PROJECT_NUMBER,
-  location: process.env.VERTEX_GEMINI_LOCATION,
-});
+let aiClient: GoogleGenAI | null = null;
+
+async function getAIClient(): Promise<GoogleGenAI> {
+  if (!aiClient) {
+    const project = await getEnv("GCP_PROJECT_NUMBER");
+    const location = await getEnv("VERTEX_GEMINI_LOCATION");
+
+    aiClient = new GoogleGenAI({
+      vertexai: true,
+      project,
+      location,
+    });
+  }
+  return aiClient;
+}
 
 export async function queryGemini<T>(responseSchema: T, prompt: string) {
+  const ai = await getAIClient();
+  const model =
+    (await getEnv("GEMINI_MODEL")) || CONSTS.SETTING.GOOGLE.GEN_AI.DEFAULT_MODEL;
+
   const resp = await ai.models.generateContent({
-    model:
-      process.env.GEMINI_MODEL || CONSTS.SETTING.GOOGLE.GEN_AI.DEFAULT_MODEL,
+    model,
     contents: [
       {
         role: CONSTS.SETTING.GOOGLE.GEN_AI.ROLE,

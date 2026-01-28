@@ -34,6 +34,7 @@ const eslintConfig = [
       },
     },
     rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
       // 未使用importの自動削除
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
@@ -66,7 +67,13 @@ const eslintConfig = [
               group: "external",
               position: "before",
             },
+            {
+              pattern: "@/**",
+              group: "internal",
+              position: "before",
+            },
           ],
+          pathGroupsExcludedImportTypes: ["react"],
           alphabetize: {
             order: "asc",
             caseInsensitive: true,

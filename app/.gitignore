@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# type file created by prisma automatically
+/src/generated/prisma
+
+# sample file
+dst/
