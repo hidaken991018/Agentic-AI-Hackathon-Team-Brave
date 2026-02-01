@@ -6,6 +6,12 @@ variable "gcp_project_id" {
   type        = string
 }
 
+variable "db_password" {
+  description = "Cloud SQL データベースユーザーのパスワード"
+  type        = string
+  sensitive   = true
+}
+
 # --------------------------------------------------------------------------------
 # 1. Terraform 本体の設定（Backend: チーム共有のための保存場所）
 # --------------------------------------------------------------------------------

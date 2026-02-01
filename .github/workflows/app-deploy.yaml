@@ -60,10 +60,9 @@ jobs:
         run: npm run lint
 
       # 5. テスト実行
-      # TODO:　テストコードが整い次第有効化
-      # - name: Run Test
-      #   working-directory: ./app
-      #   run: npm test
+      - name: Run Test
+        working-directory: ./app
+        run: npm test
 
   # --- Job 2: ビルド & プッシュ ---
   build:

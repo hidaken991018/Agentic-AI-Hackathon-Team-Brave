@@ -24,6 +24,8 @@ ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Prisma Client を生成
+RUN npx prisma generate
 # Next.js のビルドを実行
 RUN npm run build
 

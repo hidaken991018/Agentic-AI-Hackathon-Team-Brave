@@ -67,7 +67,13 @@ const eslintConfig = [
               group: "external",
               position: "before",
             },
+            {
+              pattern: "@/**",
+              group: "internal",
+              position: "before",
+            },
           ],
+          pathGroupsExcludedImportTypes: ["react"],
           alphabetize: {
             order: "asc",
             caseInsensitive: true,

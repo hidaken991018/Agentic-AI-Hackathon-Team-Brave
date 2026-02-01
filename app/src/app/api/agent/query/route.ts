@@ -6,6 +6,7 @@ import { fpInstructor } from "@/agents/fpInstructor";
 import { jsonEditor } from "@/agents/jsonEditor";
 import { createSessionId } from "@/libs/google/createSessionId";
 import { getAccessToken } from "@/libs/google/getAccessToken";
+import { aiCommentJsonSchemaForLlm } from "@/schema/aiCommentJson/aiCommentJsonSchema";
 import { hearingJsonSchemaForLlm } from "@/schema/hearingJson/hearingJsonSchema";
 
 type Body = {
@@ -28,11 +29,24 @@ export async function POST(req: Request) {
     : await createSessionId(userId);
 
   // === FP AI によるJson更新指示の生成 ===
-  // 指示を作成 TODO プロンプト整備＆別ファイルへの切り出し
-  const promptInstructToJsonEditor = `あなたの指示をインプットとして、この後、JSON更新AIがJSONを生成します。
-    あなたはユーザーへの質問返しはせず、Json更新AIに対する指示を出してください。
-    Json更新AIへの指示はJSON形式ではなく口語的にお願いしたいのと、JSON生成AIに対してJSONを生成するように明示的に指示してください。
-    ユーザーのコメントは次のとおりです。`;
+   const promptInstructToJsonEditor = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
+
+  ### 各項目の作成ルール
+  1. commentList:
+    - ユーザーを否定せず、肯定的に捉えたうえで、データに基づく現状分析を伝えてください。
+    - 具体的な根拠（例：「2043年に純資産が黒字化する見込みです」など）を必ず含めてください。
+
+  2. nextActionList:
+    - 分析に基づき、次に確認・入力すべき項目を1つ提案してください。
+    - アクションを行うことで得られるメリットも併せて記述してください。
+    - 「〜を確認してください」「〜の準備を始めましょう」という形式に限定し、質問形式は禁止します。
+
+  3. quizDirectionList:
+    - ライフプランデータから特定した「将来の変化点や潜在的リスク」に対し、ユーザーが備えるべき知識や心構えを補完するためのクイズ生成方針を記述してください。
+    - 記述形式：「ユーザーは〇〇年頃に△△という状況になるため、☆☆に関する知識を問うクイズを出題し、□□の意識を高める方針とする」といった戦略的な内容にしてください。
+    - 改行は \n にエスケープし、1つの連続した文字列として格納してください。`;
+
+  const aijsonResponse = await jsonEditor(aiCommentJsonSchemaForLlm, promptInstructToJsonEditor);
 
   const fpAiInstructionStart = Date.now();
   const instructions = await fpInstructor(
