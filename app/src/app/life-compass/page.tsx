@@ -7,12 +7,11 @@ import { Loader2 } from "lucide-react";
 import { AiCommentSection } from "@/components/lifeplan/AiCommentSection";
 import { LifePlanChart } from "@/components/lifeplan/LifePlanChart";
 import { LifePlanCombinedView } from "@/components/lifeplan/LifePlanCombinedView";
-import { LifePlanTable } from "@/components/lifeplan/LifePlanTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LifePlanJson } from "@/schema/lifePlanJson/lifePlanJsonSchema";
 
-type ViewMode = "table" | "chart" | "both";
+type ViewMode = "chart" | "both";
 
 interface AiComment {
   commentList: string[];
@@ -92,12 +91,6 @@ export default function LifePlanPage() {
                 詳細
               </Button>
               <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                onClick={() => setViewMode("table")}
-              >
-                表形式
-              </Button>
-              <Button
                 variant={viewMode === "chart" ? "default" : "outline"}
                 onClick={() => setViewMode("chart")}
               >
@@ -107,9 +100,8 @@ export default function LifePlanPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {viewMode === "table" && <LifePlanTable data={data.lifePlan} />}
-          {viewMode === "chart" && <LifePlanChart data={data.lifePlan} />}
           {viewMode === "both" && <LifePlanCombinedView data={data.lifePlan} />}
+          {viewMode === "chart" && <LifePlanChart data={data.lifePlan} />}
         </CardContent>
       </Card>
     </div>

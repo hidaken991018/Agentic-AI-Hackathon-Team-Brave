@@ -6,7 +6,6 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
-  Legend,
   Line,
   ReferenceLine,
   Tooltip,
@@ -30,7 +29,7 @@ const COLORS = {
   netAssets: "#2a9d8f",
 };
 
-const LABEL_WIDTH = 200;
+const LABEL_WIDTH = 208;
 const CELL_WIDTH = 80;
 const CHART_HEIGHT = 400;
 
@@ -63,34 +62,41 @@ export function LifePlanCombinedView({ data }: LifePlanCombinedViewProps) {
           style={{ width: LABEL_WIDTH }}
         >
           {/* Y軸グラフ（固定） */}
-          <div className="border-b">
+          <div className="border-b" style={{ maxWidth: LABEL_WIDTH }}>
             <ComposedChart
               width={LABEL_WIDTH}
               height={CHART_HEIGHT}
               data={chartData}
-              margin={{ top: 20, right: 5, left: 5, bottom: 20 }}
+              margin={{ top: 20, right: 0, left: 0, bottom: 20 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
               <XAxis
                 dataKey="year"
-                tick={{ fontSize: 12 }}
+                axisLine={false}
+                tick={false}
                 tickFormatter={(value) => {
                   const yearNum = parseInt(value, 10);
                   return yearNum % 5 === 0 ? value : "";
                 }}
               />
               <YAxis
-                domain={["dataMin", "dataMax"]}
+                domain={yDomain}
                 allowDataOverflow={true}
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => `${value.toLocaleString()}万`}
                 width={LABEL_WIDTH}
               />
-              {/* Legendのスペースを確保 */}
-              <Legend content={() => <div style={{ height: 24 }} />} />
+              <Line
+                type="monotone"
+                dataKey="netAssets"
+                stroke="transparent"
+                strokeWidth={3}
+                dot={false}
+                name="netAssets"
+              />
+              <Area dataKey="income" stroke="none" fill="transparent" />
+              <Area dataKey="expenditure" stroke="none" fill="transparent" />\
             </ComposedChart>
           </div>
-
           {/* テーブルのラベル列（固定） */}
           <div>
             <table className="w-full border-collapse">
@@ -230,19 +236,9 @@ export function LifePlanCombinedView({ data }: LifePlanCombinedViewProps) {
                     return yearNum % 5 === 0 ? value : "";
                   }}
                 />
-                {/* <YAxis domain={yDomain} hide /> */}
-
+                <YAxis domain={yDomain} hide={true} allowDataOverflow={true} />
                 <Tooltip content={<ChartTooltip />} />
-                <Legend
-                  formatter={(value) => {
-                    const labels: Record<string, string> = {
-                      income: "収入",
-                      expenditure: "支出",
-                      netAssets: "純資産",
-                    };
-                    return labels[value] ?? value;
-                  }}
-                />
+
                 <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
                 <Area
                   type="monotone"
