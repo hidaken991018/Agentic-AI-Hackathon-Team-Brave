@@ -90,15 +90,16 @@ export const transformToApiPayload = (
             // mapping がある場合は、空でもデフォルト値を設定
             if (subMapping) {
               // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
+              const mappingLower = typeof subMapping === "string" ? subMapping.toLowerCase() : "";
               const shouldConvertToNumber =
                 subField.type === "number" ||
                 (typeof subMapping === "string" &&
-                  (subMapping.includes("Year") ||
-                   subMapping.includes("Age") ||
-                   subMapping.includes("Amount") ||
-                   subMapping.includes("Rate") ||
-                   subMapping.includes("Cost") ||
-                   subMapping.includes("Ratio")));
+                  (mappingLower.includes("year") ||
+                   mappingLower.includes("age") ||
+                   mappingLower.includes("amount") ||
+                   mappingLower.includes("rate") ||
+                   mappingLower.includes("cost") ||
+                   mappingLower.includes("ratio")));
 
               // 空の値の場合、デフォルト値を設定
               let finalSubValue;
@@ -113,6 +114,15 @@ export const transformToApiPayload = (
               _.set(obj, subMapping, finalSubValue);
             }
           });
+
+          // スキーマで必須だがフォームに存在しないフィールドのデフォルト値を設定
+          if (mapping === "expenses.insuranceList") {
+            // annualFigures: 保険料の経年係数（デフォルト: 1.0 = 変化なし）
+            if (!_.has(obj, "annualFigures")) {
+              _.set(obj, "annualFigures", 1.0);
+            }
+          }
+
           return obj;
         });
 
@@ -122,15 +132,16 @@ export const transformToApiPayload = (
       // B. 通常の質問
       else {
         // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
+        const mappingLower = typeof mapping === "string" ? mapping.toLowerCase() : "";
         const shouldConvertToNumber =
           q.type === "number" ||
           (typeof mapping === "string" &&
-            (mapping.includes("Year") ||
-             mapping.includes("Age") ||
-             mapping.includes("Amount") ||
-             mapping.includes("Rate") ||
-             mapping.includes("Cost") ||
-             mapping.includes("Ratio")));
+            (mappingLower.includes("year") ||
+             mappingLower.includes("age") ||
+             mappingLower.includes("amount") ||
+             mappingLower.includes("rate") ||
+             mappingLower.includes("cost") ||
+             mappingLower.includes("ratio")));
 
         // 空の値の場合、デフォルト値を設定（必須フィールドのバリデーションエラーを防ぐ）
         let finalValue;
