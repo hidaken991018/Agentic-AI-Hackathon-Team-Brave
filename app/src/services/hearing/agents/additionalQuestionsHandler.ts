@@ -27,6 +27,11 @@ import {
 const MAX_QUESTION_ROUNDS = 3;
 
 /**
+ * 1ラウンドあたりの最大質問数
+ */
+const MAX_QUESTIONS_PER_ROUND = 5;
+
+/**
  * 認証情報を含む追加質問リクエスト型
  *
  * API ルートから渡される、userId を含むリクエストデータ
@@ -71,6 +76,8 @@ interface GeneratedQuestion {
     | "long_text";
   /** AI解釈が必要かどうか */
   requiresAiInterpretation: boolean;
+  /** この質問への回答が必須かどうか（Geminiから受け取るが、実際は常にfalse扱い） */
+  isRequired?: boolean;
   /** 選択肢（ラジオボタンやプルダウンの場合） */
   options?: string[];
 }
@@ -88,6 +95,9 @@ function buildConsistencyCheckPrompt(): string {
 ## チェック項目
 1. データの整合性: 矛盾する情報がないか
 2. データの十分性: ファイナンシャルプランニングに必要な情報が揃っているか
+
+## 注意
+- **任意項目かつ入力されていない情報については、データ不足とは見なしません**
 
 ## 必要な情報の例
 - 年齢、家族構成
@@ -119,8 +129,11 @@ function buildQuestionGenerationPrompt(agentAnalysis: string): string {
 ${agentAnalysis}
 
 ## 出力要件
-欠落している情報や矛盾点を解消するための質問を生成してください。
-各質問には適切な回答形式を設定してください。
+- 欠落している情報や矛盾点を解消するための質問を生成してください
+- **最大${MAX_QUESTIONS_PER_ROUND}問まで**生成してください（重要度の高い順）
+- 各質問には適切な回答形式を設定してください
+- **任意フィールド（optional fields）や推奨情報については質問を生成しないでください**
+- **必須データの欠落や矛盾がある場合のみ質問を生成してください**
 `.trim();
 }
 
@@ -156,6 +169,10 @@ function buildQuestionGenerationSchema() {
               type: "boolean",
               description: "AI解釈が必要かどうか",
             },
+            isRequired: {
+              type: "boolean",
+              description: "この質問への回答が必須かどうか（現在は常にfalse）",
+            },
             options: {
               type: "array",
               items: { type: "string" },
@@ -168,8 +185,9 @@ function buildQuestionGenerationSchema() {
             "suggestedAnswerFormat",
             "requiresAiInterpretation",
           ],
+          // isRequiredはoptional（Geminiが生成しなければfalseで補完）
         },
-        description: "生成された質問リスト",
+        description: "生成された質問リスト（最大5問）",
       },
     },
     required: ["questions"],
@@ -203,7 +221,9 @@ function parseGeminiResponse(responseText: string): GeneratedQuestion[] {
  * @param generatedQuestions - 生成された質問のリスト
  * @returns Questionスキーマ形式に変換された質問リスト
  */
-function convertToQuestions(generatedQuestions: GeneratedQuestion[]): Question[] {
+function convertToQuestions(
+  generatedQuestions: GeneratedQuestion[],
+): Question[] {
   return generatedQuestions.map((q) => {
     const answerMethod: AnswerMethod = {
       answerCount: q.suggestedAnswerCount,
@@ -216,6 +236,7 @@ function convertToQuestions(generatedQuestions: GeneratedQuestion[]): Question[]
       id: randomUUID(),
       text: q.text,
       answerMethod,
+      isRequired: false, // 常にfalseを設定（全質問任意）
     };
   });
 }
@@ -291,7 +312,10 @@ export async function handleAdditionalQuestions(
 
   const geminiResult = await withRetry(
     async () => {
-      const responseText = await queryGemini(geminiResponseSchema, structuringPrompt);
+      const responseText = await queryGemini(
+        geminiResponseSchema,
+        structuringPrompt,
+      );
       if (!responseText) {
         throw new Error("Gemini APIからのレスポンスが空です");
       }
@@ -310,7 +334,15 @@ export async function handleAdditionalQuestions(
     };
   }
 
-  const generatedQuestions = geminiResult.value;
+  let generatedQuestions = geminiResult.value;
+
+  // 質問数を最大5問に制限
+  if (generatedQuestions.length > MAX_QUESTIONS_PER_ROUND) {
+    console.log(
+      `[AdditionalQuestionsHandler] 生成された質問が${MAX_QUESTIONS_PER_ROUND}問を超えています。優先度の高い${MAX_QUESTIONS_PER_ROUND}問に制限します。`,
+    );
+    generatedQuestions = generatedQuestions.slice(0, MAX_QUESTIONS_PER_ROUND);
+  }
 
   // 4. 質問が生成されなかった場合はデータが十分と判断し、hearing_completedを返却
   if (generatedQuestions.length === 0) {

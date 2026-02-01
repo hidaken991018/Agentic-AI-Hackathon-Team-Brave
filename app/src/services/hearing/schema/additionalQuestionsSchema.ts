@@ -86,6 +86,7 @@ export type AnswerMethod = z.infer<typeof answerMethodSchema>;
  * @property id - 質問 ID（UUID v4）
  * @property text - 質問文
  * @property answerMethod - 回答方法
+ * @property isRequired - この質問への回答が必須かどうか（デフォルト: false）
  */
 export const questionSchema = z.object({
   /** 質問 ID（UUID v4） */
@@ -94,6 +95,8 @@ export const questionSchema = z.object({
   text: z.string(),
   /** 回答方法 */
   answerMethod: answerMethodSchema,
+  /** この質問への回答が必須かどうか（デフォルト: false、全て任意） */
+  isRequired: z.boolean().default(false),
 });
 
 /** 質問型 */

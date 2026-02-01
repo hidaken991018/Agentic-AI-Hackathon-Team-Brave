@@ -114,6 +114,9 @@ export default function AdditionalQuestionsPage() {
         <p className="mt-1 text-sm text-gray-500">
           質問ラウンド: {questionCount} / 3
         </p>
+        <p className="mt-1 text-sm text-blue-600">
+          全ての質問は任意です。スキップして次へ進むことも可能です。
+        </p>
       </div>
 
       <Form {...form}>
