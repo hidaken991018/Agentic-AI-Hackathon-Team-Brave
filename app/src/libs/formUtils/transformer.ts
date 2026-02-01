@@ -87,14 +87,28 @@ export const transformToApiPayload = (
 
             addQualitative(subField, subValue, `${q.label}(${index + 1}件目)`);
 
-            if (
-              subMapping &&
-              subValue !== undefined &&
-              subValue !== null &&
-              subValue !== ""
-            ) {
-              const finalSubValue =
-                subField.type === "number" ? Number(subValue) : subValue;
+            // mapping がある場合は、空でもデフォルト値を設定
+            if (subMapping) {
+              // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
+              const shouldConvertToNumber =
+                subField.type === "number" ||
+                (typeof subMapping === "string" &&
+                  (subMapping.includes("Year") ||
+                   subMapping.includes("Age") ||
+                   subMapping.includes("Amount") ||
+                   subMapping.includes("Rate") ||
+                   subMapping.includes("Cost") ||
+                   subMapping.includes("Ratio")));
+
+              // 空の値の場合、デフォルト値を設定
+              let finalSubValue;
+              if (subValue === undefined || subValue === null || subValue === "") {
+                finalSubValue = shouldConvertToNumber ? 0 : "";
+              } else {
+                finalSubValue = shouldConvertToNumber
+                  ? Number(subValue)
+                  : subValue;
+              }
 
               _.set(obj, subMapping, finalSubValue);
             }
@@ -107,12 +121,27 @@ export const transformToApiPayload = (
 
       // B. 通常の質問
       else {
-        if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
-          const finalValue = q.type === "number" ? Number(rawValue) : rawValue;
+        // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
+        const shouldConvertToNumber =
+          q.type === "number" ||
+          (typeof mapping === "string" &&
+            (mapping.includes("Year") ||
+             mapping.includes("Age") ||
+             mapping.includes("Amount") ||
+             mapping.includes("Rate") ||
+             mapping.includes("Cost") ||
+             mapping.includes("Ratio")));
 
-          // Lodash の _.set でセット
-          _.set(quantitativePayload, mapping, finalValue);
+        // 空の値の場合、デフォルト値を設定（必須フィールドのバリデーションエラーを防ぐ）
+        let finalValue;
+        if (rawValue === undefined || rawValue === null || rawValue === "") {
+          finalValue = shouldConvertToNumber ? 0 : "";
+        } else {
+          finalValue = shouldConvertToNumber ? Number(rawValue) : rawValue;
         }
+
+        // Lodash の _.set でセット
+        _.set(quantitativePayload, mapping, finalValue);
       }
     });
   });

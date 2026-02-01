@@ -7,11 +7,13 @@ import { useForm } from "react-hook-form";
 
 import { DynamicFormField } from "@/components/hearingForm/DynamicFormField";
 import { StepBar } from "@/components/hearingForm/StepBar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { CONSTS } from "@/consts";
 import { useAuth } from "@/context/AuthContext";
+import { useHearing } from "@/context/HearingContext";
 import { authenticatedFetch } from "@/libs/api/hearingApi";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
 import {
@@ -19,14 +21,18 @@ import {
   LifePlanFormData,
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
+import { buildHearingJson, validateHearingJson, extractEstimations } from "@/libs/hearing/hearingJsonBuilder";
 import { generateOutputSchema } from "@/libs/hearing/outputSchemaGenerator";
 import { FlexibleQuestion } from "@/schema/hearingFormSchema";
 import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
 
 export default function LifePlanStepForm() {
+  // 初回質問用
   const [currentStep, setCurrentStep] = useState(0);
-  const [sessionId, setSessionId] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Context から状態を取得
+  const { sessionId, setSessionId, isSubmitting, setIsSubmitting, error, setError } = useHearing();
+
   const steps = CONSTS.QUESTIONS;
   const currentStepData = steps[currentStep];
   const { user, isAnonymous } = useAuth();
@@ -39,7 +45,9 @@ export default function LifePlanStepForm() {
 
   // 1. スキーマとフォームの初期化
   const schema = generateZodSchema(steps);
-  const form = useForm({
+
+  // 初回質問フォーム
+  const initialForm = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues,
     mode: "onChange",
@@ -47,7 +55,7 @@ export default function LifePlanStepForm() {
 
   // 2. 次のステップへ進むハンドラー
   const handleNext = async () => {
-    const currentValues = form.getValues();
+    const currentValues = initialForm.getValues();
 
     // 現在のステップの中で、実際に「表示条件を満たしている」質問のIDだけを抽出
     const visibleFields = currentStepData.questions
@@ -59,17 +67,17 @@ export default function LifePlanStepForm() {
       })
       .map((q) => q.id);
 
-    const isValid = await form.trigger(visibleFields);
+    const isValid = await initialForm.trigger(visibleFields);
 
     if (isValid) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      console.log("エラー中のフィールド:", form.formState.errors);
+      console.log("エラー中のフィールド:", initialForm.formState.errors);
     }
   };
 
-  // 3. 最終送信のハンドラー
-  const onSubmit = async (data: LifePlanFormData) => {
+  // 3. 初回質問最終送信のハンドラー
+  const handleInitialSubmit = async (data: LifePlanFormData) => {
     console.log("[Hearing] 最終確定データ:", data);
     console.log("[Hearing] User ID:", user?.uid);
     console.log("[Hearing] Is Anonymous:", isAnonymous);
@@ -102,6 +110,11 @@ export default function LifePlanStepForm() {
 
         const sessionData = await sessionResponse.json();
         currentSessionId = sessionData.sessionId;
+
+        if (!currentSessionId) {
+          throw new Error("Session ID not returned from API");
+        }
+
         setSessionId(currentSessionId);
         console.log("[Hearing] AI agent session created:", currentSessionId);
       }
@@ -154,52 +167,62 @@ export default function LifePlanStepForm() {
       console.log("[Hearing] All interpreted results:", interpretedResults);
 
       // 4. ヒアリング JSON 構築
-      // TODO: calculatedData + AI推論結果をマージ
-      // const hearingJson = {
-      //   ...apiPayload.calculatedData,
-      //   // AI推論結果を適切なフィールドにマッピング
-      // };
+      console.log("[Hearing] Building hearing JSON from results...");
 
-      // 5. 追加質問取得
-      console.log("[Hearing] Fetching additional questions...");
-      const additionalQuestionsResponse = await authenticatedFetch(
+      const hearingJson = buildHearingJson(
+        apiPayload.calculatedData,
+        interpretedResults
+      );
+
+      console.log("[Hearing] Hearing JSON built:", hearingJson);
+
+      // 5. ヒアリング JSON のバリデーション
+      const validation = validateHearingJson(hearingJson);
+
+      if (!validation.success) {
+        console.error("[Hearing] Hearing JSON validation failed:", validation.errors);
+        setError(`データの検証に失敗しました: ${validation.errors?.join(", ")}`);
+        return;
+      }
+
+      console.log("[Hearing] Hearing JSON validated successfully");
+
+      // 6. セッションに保存
+      const estimations = extractEstimations(interpretedResults);
+
+      console.log("[Hearing] Saving hearing JSON to session...");
+
+      const saveResponse = await authenticatedFetch(
         user,
-        "/api/hearing/additional-questions",
+        "/api/hearing/direct-data",
         {
           method: "POST",
           body: JSON.stringify({
-            // userId を削除
             sessionId: currentSessionId,
-            questionCount: 0, // 初回は0
+            data: {
+              hearingJson: validation.data,
+              estimations,
+              savedAt: new Date().toISOString(),
+            },
+            invocationId: "hearing",
           }),
-        },
+        }
       );
 
-      if (!additionalQuestionsResponse.ok) {
-        throw new Error(
-          `Additional Questions API Error: ${additionalQuestionsResponse.statusText}`,
-        );
+      if (!saveResponse.ok) {
+        console.error("[Hearing] Failed to save hearing JSON to session");
+        setError("データの保存に失敗しました。");
+        return;
       }
 
-      const additionalQuestionsData =
-        await additionalQuestionsResponse.json();
-      console.log("[Hearing] Additional questions response:", additionalQuestionsData);
+      console.log("[Hearing] Hearing JSON saved to session successfully");
 
-      // 6. レスポンス処理 - 別ページに遷移
-      if (additionalQuestionsData.status === "additional_questions_required") {
-        // 追加質問ページに遷移（sessionId と questionCount を渡す）
-        const params = new URLSearchParams({
-          sessionId: currentSessionId,
-          questionCount: additionalQuestionsData.questionCount.toString(),
-        });
-        router.push(`/hearing/additional-questions?${params}`);
-      } else if (additionalQuestionsData.status === "hearing_completed") {
-        // ヒアリング完了 - 結果ページへ遷移
-        router.push(`/hearing/result?sessionId=${currentSessionId}`);
-      }
+      // 7. 追加質問ページへリダイレクト
+      console.log("[Hearing] Redirecting to additional questions...");
+      router.push(`/hearing/additional-questions?sessionId=${currentSessionId}`);
     } catch (error) {
       console.error("[Hearing] Error during submission:", error);
-      alert("送信中にエラーが発生しました。もう一度お試しください。");
+      setError("送信中にエラーが発生しました。もう一度お試しください。");
     } finally {
       setIsSubmitting(false);
     }
@@ -209,13 +232,22 @@ export default function LifePlanStepForm() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      {/* エラー表示 */}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* ステップバー */}
       <StepBar currentStep={currentStep} steps={steps} />
 
-      <Form {...form}>
+      {/* 初回質問フォーム */}
+      <Form {...initialForm}>
         <form
-          onSubmit={form.handleSubmit(
+          onSubmit={initialForm.handleSubmit(
             (data) => {
-              onSubmit(data as LifePlanFormData);
+              handleInitialSubmit(data as LifePlanFormData);
             },
             (errors) => {
               console.error(
@@ -261,6 +293,15 @@ export default function LifePlanStepForm() {
           </Card>
         </form>
       </Form>
+
+      {/* 送信中のローディング */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="p-6">
+            <p className="text-center">データを解析中...</p>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

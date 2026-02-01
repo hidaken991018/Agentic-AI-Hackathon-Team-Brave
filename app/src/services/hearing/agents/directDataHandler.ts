@@ -59,8 +59,8 @@ export async function handleDirectData(
   // 1. セッション ID を取得
   const sessionId = request.sessionId;
 
-  // 一連の操作で使用する invocationId を固定
-  const invocationId = "hearing";
+  // 一連の操作で使用する invocationId を取得（デフォルトは "hearing"）
+  const invocationId = request.invocationId ?? "hearing";
 
   // 2. セッションに直接データを保存（リトライは axiosClient で一元管理）
   // REST API では期限切れセッションが自動削除されるため、
