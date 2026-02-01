@@ -27,8 +27,8 @@ export function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   return (
     <div className="bg-background border rounded-lg shadow-lg p-3">
       <p className="font-semibold mb-2">{label}年</p>
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-2 text-sm">
+      {payload.map((entry) => (
+        <div key={entry.name} className="flex items-center gap-2 text-sm">
           <span
             className="w-3 h-3 rounded-full"
             style={{ backgroundColor: entry.color }}

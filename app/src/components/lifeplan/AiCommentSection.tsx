@@ -25,8 +25,8 @@ export function AiCommentSection({
         </CardHeader>
         <CardContent>
           <ul className="space-y-3">
-            {commentList.map((comment, index) => (
-              <li key={index} className="flex gap-2 text-sm text-muted-foreground">
+            {commentList.map((comment) => (
+              <li key={comment} className="flex gap-2 text-sm text-muted-foreground">
                 <span className="text-primary font-medium">•</span>
                 <span>{comment}</span>
               </li>
@@ -46,7 +46,7 @@ export function AiCommentSection({
         <CardContent>
           <ul className="space-y-3">
             {nextActionList.map((action, index) => (
-              <li key={index} className="flex gap-3 text-sm">
+              <li key={action} className="flex gap-3 text-sm">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs text-muted-foreground">
                   {index + 1}
                 </span>

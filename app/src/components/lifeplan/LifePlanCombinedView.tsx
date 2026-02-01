@@ -51,8 +51,6 @@ export function LifePlanCombinedView({ data }: LifePlanCombinedViewProps) {
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  console.log("Y Domain:", yDomain);
-
   return (
     <div className="rounded-lg border">
       <div className="flex">
@@ -94,7 +92,7 @@ export function LifePlanCombinedView({ data }: LifePlanCombinedViewProps) {
                 name="netAssets"
               />
               <Area dataKey="income" stroke="none" fill="transparent" />
-              <Area dataKey="expenditure" stroke="none" fill="transparent" />\
+              <Area dataKey="expenditure" stroke="none" fill="transparent" />
             </ComposedChart>
           </div>
           {/* テーブルのラベル列（固定） */}
