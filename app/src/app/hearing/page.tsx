@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { AutoFillControls } from "@/components/devTools/AutoFillControls";
 import { DynamicFormField } from "@/components/hearingForm/DynamicFormField";
 import { StepBar } from "@/components/hearingForm/StepBar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,13 +16,14 @@ import { CONSTS } from "@/consts";
 import { useAuth } from "@/context/AuthContext";
 import { useHearing } from "@/context/HearingContext";
 import { authenticatedFetch } from "@/libs/api/hearingApi";
+import { useAutoFill } from "@/libs/devUtils/autoFill";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
 import {
   generateDefaultValues,
   LifePlanFormData,
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
-import { buildHearingJson, validateHearingJson, extractEstimations } from "@/libs/hearing/hearingJsonBuilder";
+import { buildHearingJson, extractEstimations, validateHearingJson } from "@/libs/hearing/hearingJsonBuilder";
 import { generateOutputSchema } from "@/libs/hearing/outputSchemaGenerator";
 import { FlexibleQuestion } from "@/schema/hearingFormSchema";
 import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
@@ -52,6 +54,12 @@ export default function LifePlanStepForm() {
     defaultValues: defaultValues,
     mode: "onChange",
   });
+
+  // 開発用自動入力機能
+  const { isEnabled: autoFillEnabled, fillAllSteps, fillCurrentStep, clearForm } = useAutoFill(
+    initialForm,
+    CONSTS.QUESTIONS
+  );
 
   // 2. 次のステップへ進むハンドラー
   const handleNext = async () => {
@@ -293,6 +301,15 @@ export default function LifePlanStepForm() {
           </Card>
         </form>
       </Form>
+
+      {/* 開発用自動入力コントロール */}
+      {autoFillEnabled && (
+        <AutoFillControls
+          onFillAll={fillAllSteps}
+          onFillStep={() => fillCurrentStep(currentStep)}
+          onClear={clearForm}
+        />
+      )}
 
       {/* 送信中のローディング */}
       {isSubmitting && (
