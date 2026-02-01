@@ -9,19 +9,9 @@ import { LifePlanChart } from "@/components/lifeplan/LifePlanChart";
 import { LifePlanCombinedView } from "@/components/lifeplan/LifePlanCombinedView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { LifePlanJson } from "@/schema/lifePlanJson/lifePlanJsonSchema";
+import type { LifeCompassData } from "@/schema/lifeCompassData/lifeCompassDataSchema";
 
 type ViewMode = "chart" | "both";
-
-interface AiComment {
-  commentList: string[];
-  nextActionList: string[];
-}
-
-interface LifeCompassData {
-  lifePlan: LifePlanJson;
-  aiComment: AiComment;
-}
 
 export default function LifePlanPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("both");
@@ -32,6 +22,7 @@ export default function LifePlanPage() {
   useEffect(() => {
     async function fetchData() {
       try {
+        // ここでは仮のAPIエンドポイントからデータを取得する例を示す
         const response = await fetch("/api/test-life-compass-data");
         if (!response.ok) {
           throw new Error("データの取得に失敗しました");

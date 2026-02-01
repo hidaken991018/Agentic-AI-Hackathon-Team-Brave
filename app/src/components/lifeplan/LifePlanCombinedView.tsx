@@ -52,7 +52,11 @@ export function LifePlanCombinedView({ data }: LifePlanCombinedViewProps) {
   }, [chartData]);
 
   return (
-    <div className="rounded-lg border">
+    <div
+      className="rounded-lg border"
+      role="region"
+      aria-label="ライフプラン詳細ビュー: グラフとテーブルで収支と資産の推移を表示"
+    >
       <div className="flex">
         {/* 左側: 固定のY軸とラベル列 */}
         <div

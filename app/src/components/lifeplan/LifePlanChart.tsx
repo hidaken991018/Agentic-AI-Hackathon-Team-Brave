@@ -33,7 +33,11 @@ export function LifePlanChart({ data }: LifePlanChartProps) {
   const chartData = transformToChartData(data);
 
   return (
-    <div className="w-full h-[500px]">
+    <div
+      className="w-full h-[500px]"
+      role="img"
+      aria-label="ライフプラングラフ: 収入、支出、純資産の推移を表示"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={chartData}
