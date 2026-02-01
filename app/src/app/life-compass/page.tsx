@@ -6,12 +6,13 @@ import { Loader2 } from "lucide-react";
 
 import { AiCommentSection } from "@/components/lifeplan/AiCommentSection";
 import { LifePlanChart } from "@/components/lifeplan/LifePlanChart";
+import { LifePlanCombinedView } from "@/components/lifeplan/LifePlanCombinedView";
 import { LifePlanTable } from "@/components/lifeplan/LifePlanTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LifePlanJson } from "@/schema/lifePlanJson/lifePlanJsonSchema";
 
-type ViewMode = "table" | "chart";
+type ViewMode = "table" | "chart" | "both";
 
 interface AiComment {
   commentList: string[];
@@ -24,7 +25,7 @@ interface LifeCompassData {
 }
 
 export default function LifePlanPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("both");
   const [data, setData] = useState<LifeCompassData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +86,12 @@ export default function LifePlanPage() {
             <CardTitle className="text-2xl">ライフプラン表</CardTitle>
             <div className="flex gap-2">
               <Button
+                variant={viewMode === "both" ? "default" : "outline"}
+                onClick={() => setViewMode("both")}
+              >
+                詳細
+              </Button>
+              <Button
                 variant={viewMode === "table" ? "default" : "outline"}
                 onClick={() => setViewMode("table")}
               >
@@ -94,17 +101,15 @@ export default function LifePlanPage() {
                 variant={viewMode === "chart" ? "default" : "outline"}
                 onClick={() => setViewMode("chart")}
               >
-                グラフ
+                概要
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {viewMode === "table" ? (
-            <LifePlanTable data={data.lifePlan} />
-          ) : (
-            <LifePlanChart data={data.lifePlan} />
-          )}
+          {viewMode === "table" && <LifePlanTable data={data.lifePlan} />}
+          {viewMode === "chart" && <LifePlanChart data={data.lifePlan} />}
+          {viewMode === "both" && <LifePlanCombinedView data={data.lifePlan} />}
         </CardContent>
       </Card>
     </div>
