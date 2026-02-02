@@ -79,13 +79,13 @@ export default function LifePlanPage() {
                 variant={viewMode === "both" ? "default" : "outline"}
                 onClick={() => setViewMode("both")}
               >
-                詳細
+                詳細ライフプラン
               </Button>
               <Button
                 variant={viewMode === "chart" ? "default" : "outline"}
                 onClick={() => setViewMode("chart")}
               >
-                概要
+                資産推移グラフ
               </Button>
             </div>
           </div>
