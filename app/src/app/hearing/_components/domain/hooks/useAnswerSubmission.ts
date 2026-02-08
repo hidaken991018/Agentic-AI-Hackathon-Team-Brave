@@ -9,9 +9,10 @@
  * 5. 完了判定とリダイレクト
  */
 
+import { useState } from "react";
+
 import { User } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { useHearing } from "@/context/HearingContext";
 import { Question } from "@/services/hearing/schema/additionalQuestionsSchema";
@@ -86,6 +87,10 @@ export function useAnswerSubmission(
       });
 
       console.log("[useAnswerSubmission] AI interpretation completed");
+      console.log(
+        "[useAnswerSubmission] Interpreted Results:",
+        interpretedResults,
+      );
 
       // 2. hearingJSON構築とセッション保存
       console.log("[useAnswerSubmission] Saving answers to session...");

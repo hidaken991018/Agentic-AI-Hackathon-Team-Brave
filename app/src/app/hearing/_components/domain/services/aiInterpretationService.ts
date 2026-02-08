@@ -38,12 +38,24 @@ export async function processAiInterpretations(
 ): Promise<InterpretedDataResponse[]> {
   const { sessionId, user, questions, answers } = options;
 
+  // デバッグ: 全質問のrequiresAiInterpretationフラグをログ
+  console.log("[processAiInterpretations] All questions:", questions.map(q => ({
+    id: q.id,
+    text: q.text,
+    requiresAiInterpretation: q.answerMethod.requiresAiInterpretation,
+    answerMethod: q.answerMethod,
+  })));
+  console.log("[processAiInterpretations] Answers received:", JSON.stringify(answers));
+
   // AI解釈が必要な質問をフィルタリング
   const interpretableQuestions = filterInterpretableQuestions(questions);
 
   if (interpretableQuestions.length === 0) {
     console.log(
-      "[processAiInterpretations] No questions require AI interpretation",
+      "[processAiInterpretations] No questions require AI interpretation. Returning empty array.",
+    );
+    console.log(
+      "[processAiInterpretations] This means buildHearingJson will receive no interpreted results and return skeleton values!",
     );
     return [];
   }
@@ -51,22 +63,29 @@ export async function processAiInterpretations(
   console.log(
     `[processAiInterpretations] Processing ${interpretableQuestions.length} questions with AI interpretation`,
   );
+  console.log(
+    "[processAiInterpretations] Interpretable question IDs:",
+    interpretableQuestions.map(q => q.id),
+  );
 
   // 各質問に対してAI解釈APIを並列実行
   const interpretedPromises = interpretableQuestions.map(async (q) => {
     const outputSchema = generateOutputSchema([`#${q.id}`]);
+
+    const requestBody = {
+      sessionId,
+      content: `${q.text}: ${answers[q.id]}`,
+      estimationTargets: [`#${q.id}`],
+      outputSchema,
+    };
+    console.log(`[processAiInterpretations] API request for q.id="${q.id}":`, JSON.stringify(requestBody, null, 2));
 
     const response = await authenticatedFetch(
       user,
       "/api/hearing/interpreted-data",
       {
         method: "POST",
-        body: JSON.stringify({
-          sessionId,
-          content: `${q.text}: ${answers[q.id]}`,
-          estimationTargets: [`#${q.id}`],
-          outputSchema,
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
 
@@ -74,7 +93,9 @@ export async function processAiInterpretations(
       throw new Error(`AI Interpretation API Error: ${response.statusText}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+    console.log(`[processAiInterpretations] API response for q.id="${q.id}":`, JSON.stringify(json, null, 2));
+    return json;
   });
 
   // 全てのAI解釈が完了するまで待機

@@ -123,6 +123,24 @@ export const transformToApiPayload = (
             }
           }
 
+          if (mapping === "basicProfile.childList") {
+            // 学校種別フィールドのデフォルト値を設定（未入力の場合は"NON"）
+            const schoolTypeFields = [
+              "preschoolersType",
+              "primarySchoolType",
+              "juniorHighSchoolType",
+              "highSchoolType",
+              "universityType",
+              "graduateSchoolType",
+            ];
+
+            schoolTypeFields.forEach((field) => {
+              if (!_.has(obj, field) || _.get(obj, field) === "") {
+                _.set(obj, field, "NON");
+              }
+            });
+          }
+
           return obj;
         });
 

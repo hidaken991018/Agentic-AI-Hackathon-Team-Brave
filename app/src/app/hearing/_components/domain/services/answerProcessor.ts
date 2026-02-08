@@ -33,6 +33,21 @@ export async function processAndSaveAnswers(
 ): Promise<void> {
   const { sessionId, user, interpretedResults, questionCount } = options;
 
+  // デバッグ: interpretedResults の中身を詳細にログ
+  console.log(
+    "[processAndSaveAnswers] interpretedResults count:",
+    interpretedResults.length,
+  );
+  console.log(
+    "[processAndSaveAnswers] interpretedResults raw:",
+    JSON.stringify(interpretedResults, null, 2),
+  );
+  for (const [i, result] of interpretedResults.entries()) {
+    console.log(`[processAndSaveAnswers] result[${i}].structuredData:`, JSON.stringify(result.structuredData));
+    console.log(`[processAndSaveAnswers] result[${i}].structuredData keys:`, Object.keys(result.structuredData ?? {}));
+    console.log(`[processAndSaveAnswers] result[${i}].estimations:`, JSON.stringify(result.estimations));
+  }
+
   // 部分的なhearingJSON更新を構築
   const hearingJsonUpdate = buildHearingJson(
     {} as HearingJsonInput, // 空のベース - AI結果のみ
@@ -41,7 +56,7 @@ export async function processAndSaveAnswers(
 
   console.log(
     "[processAndSaveAnswers] Hearing JSON update:",
-    hearingJsonUpdate,
+    JSON.stringify(hearingJsonUpdate, null, 2),
   );
 
   // セッションに保存（差分更新）
