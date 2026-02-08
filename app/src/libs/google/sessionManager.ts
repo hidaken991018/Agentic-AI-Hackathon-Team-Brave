@@ -45,6 +45,25 @@ export type SessionError =
   | { code: "SESSION_CREATE_FAILED"; message: string };
 
 /**
+ * セッションイベントを表すインターフェース
+ */
+export interface SessionEvent {
+  /** イベント名 */
+  name: string;
+  /** イベントID */
+  invocationId: string;
+  /** 作成者 */
+  author: string;
+  /** タイムスタンプ */
+  timestamp: string;
+  /** コンテンツ */
+  content: {
+    role: string;
+    parts: Array<{ text?: string }>;
+  };
+}
+
+/**
  * セッション管理サービスのインターフェース
  *
  * REST API パターンに移行:
@@ -60,6 +79,10 @@ export interface SessionManagerService {
     data: unknown,
     invocationId?: string,
   ): Promise<Result<void, SessionError>>;
+  /** セッションのイベントを取得 */
+  getSessionEvents(
+    sessionId: string,
+  ): Promise<Result<SessionEvent[], SessionError>>;
 }
 
 /**
@@ -263,11 +286,76 @@ export async function appendSessionData(
 }
 
 /**
+ * セッションのイベントを取得（listEvents API を使用）
+ *
+ * REST API エンドポイント: GET /sessions/{sessionId}/events
+ *
+ * @param sessionId - イベントを取得するセッション ID
+ * @returns 成功時はイベント配列、失敗時はエラー
+ */
+export async function getSessionEvents(
+  sessionId: string,
+): Promise<Result<SessionEvent[], SessionError>> {
+  const { location, projectId, reasoningEngineId } = getConfig();
+
+  try {
+    const token = await getAuthenticatedClient();
+
+    // REST API パターン: GET /sessions/{sessionId}/events
+    const res = await axiosClient.get(
+      `${getSessionURI_REST(location, projectId, reasoningEngineId, sessionId)}/events`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    // レスポンス形式: { sessionEvents: [...] }
+    const events: SessionEvent[] = res.data?.sessionEvents ?? [];
+
+    return { ok: true, value: events };
+  } catch (error) {
+    // axios エラーの場合はステータスコードを確認
+    if (error instanceof AxiosError && error.response) {
+      const errorData = JSON.stringify(error.response.data);
+      if (
+        error.response.status === 404 ||
+        errorData.toLowerCase().includes("not found")
+      ) {
+        return {
+          ok: false,
+          error: {
+            code: "SESSION_NOT_FOUND",
+            message: `Session not found: ${sessionId}`,
+          },
+        };
+      }
+      return {
+        ok: false,
+        error: {
+          code: "SESSION_NOT_FOUND",
+          message: `Failed to get session events: ${errorData}`,
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        code: "SESSION_NOT_FOUND",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+    };
+  }
+}
+
+/**
  * セッション管理サービスオブジェクト（インターフェース実装）
  */
 export const sessionManager: SessionManagerService = {
   createSession,
   appendSessionData,
+  getSessionEvents,
 };
 
 export default sessionManager;

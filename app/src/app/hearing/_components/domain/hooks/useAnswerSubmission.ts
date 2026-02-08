@@ -127,9 +127,9 @@ export function useAnswerSubmission(
           );
         }
       } else if (nextQuestionsData.status === "hearing_completed") {
-        // ヒアリング完了 - 結果ページへ遷移
-        console.log("[useAnswerSubmission] Hearing completed, redirecting...");
-        router.push(`/hearing/result?sessionId=${sessionId}`);
+        // ヒアリング完了 - ライフコンパスページへ遷移
+        console.log("[useAnswerSubmission] Hearing completed, redirecting to life-compass...");
+        router.push(`/life-compass?sessionId=${sessionId}`);
       }
     } catch (err) {
       const errorMessage = "回答の送信に失敗しました。";

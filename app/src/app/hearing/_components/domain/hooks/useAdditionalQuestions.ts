@@ -5,10 +5,13 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { User } from "firebase/auth";
+import { useRouter } from "next/navigation";
+
 import { useHearing } from "@/context/HearingContext";
 import { Question } from "@/services/hearing/schema/additionalQuestionsSchema";
+
 import { fetchAdditionalQuestions } from "../services/additionalQuestionsService";
 
 export interface UseAdditionalQuestionsOptions {
@@ -83,7 +86,7 @@ export function useAdditionalQuestions(
         );
       } else if (data.status === "hearing_completed") {
         console.log("[useAdditionalQuestions] Hearing completed, redirecting...");
-        router.push(`/hearing/result?sessionId=${sessionId}`);
+        router.push(`/life-compass?sessionId=${sessionId}`);
       }
     } catch (err) {
       const errorMessage = "追加質問の取得に失敗しました。";
@@ -118,7 +121,7 @@ export function useAdditionalQuestions(
           );
         } else if (data.status === "hearing_completed") {
           console.log("[useAdditionalQuestions] Hearing completed, redirecting...");
-          router.push(`/hearing/result?sessionId=${sessionId}`);
+          router.push(`/life-compass?sessionId=${sessionId}`);
         }
       })
       .catch((err) => {

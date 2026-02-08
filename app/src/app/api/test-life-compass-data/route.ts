@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { analyzeLifePlan } from "@/agents/lifePlanAnalyzer";
 import { createLifePlan } from "@/app/features/lifePlan";
-import { convertLifePlanToTsvCompact } from "@/libs/lifePlan";
+import { convertLifePlanToTsvCompact } from "@/libs/lifeplan";
 import type { AiCommentJson } from "@/schema/aiCommentJson/aiCommentJsonSchema";
 
 /**
