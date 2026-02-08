@@ -11,6 +11,7 @@
     "pydantic",
     "pyproject",
     "serviceusage",
+    "usecases",
     "venv",
     "vertexai"
   ],
