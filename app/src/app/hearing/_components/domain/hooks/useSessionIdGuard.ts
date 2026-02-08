@@ -5,8 +5,9 @@
  * sessionIdが未設定の場合は /hearing へリダイレクトします。
  */
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useHearing } from "@/context/HearingContext";
 
