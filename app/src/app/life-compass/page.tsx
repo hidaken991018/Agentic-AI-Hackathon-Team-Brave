@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { AiCommentSection } from "@/components/lifeplan/AiCommentSection";
 import { LifePlanChart } from "@/components/lifeplan/LifePlanChart";
@@ -14,6 +15,9 @@ import type { LifeCompassData } from "@/schema/lifeCompassData/lifeCompassDataSc
 type ViewMode = "chart" | "both";
 
 export default function LifePlanPage() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
+
   const [viewMode, setViewMode] = useState<ViewMode>("both");
   const [data, setData] = useState<LifeCompassData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,10 +26,18 @@ export default function LifePlanPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // ここでは仮のAPIエンドポイントからデータを取得する例を示す
-        const response = await fetch("/api/test-life-compass-data");
+        // sessionIdがある場合はセッションからデータを取得
+        // ない場合はテスト用APIを使用（開発用）
+        const apiUrl = sessionId
+          ? `/api/life-compass?sessionId=${sessionId}`
+          : "/api/test-life-compass-data";
+
+        const response = await fetch(apiUrl);
         if (!response.ok) {
-          throw new Error("データの取得に失敗しました");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || errorData.details || "データの取得に失敗しました"
+          );
         }
         const result: LifeCompassData = await response.json();
         setData(result);
@@ -37,7 +49,7 @@ export default function LifePlanPage() {
     }
 
     fetchData();
-  }, []);
+  }, [sessionId]);
 
   if (isLoading) {
     return (

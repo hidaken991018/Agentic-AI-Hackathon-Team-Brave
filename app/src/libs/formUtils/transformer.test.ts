@@ -107,8 +107,27 @@ describe("transformToApiPayload - 詳細構造テスト", () => {
     // 配列の場所と構造のチェック
     const childList = calculatedData.basicProfile?.childList;
     expect(childList).toHaveLength(2);
-    expect(childList?.[0]).toEqual({ name: "太郎", birthYear: 2015 });
-    expect(childList?.[1]).toEqual({ name: "花子", birthYear: 2018 });
+    // 学校種別フィールドはデフォルト値 "NON" が自動付与される
+    expect(childList?.[0]).toEqual({
+      name: "太郎",
+      birthYear: 2015,
+      preschoolersType: "NON",
+      primarySchoolType: "NON",
+      juniorHighSchoolType: "NON",
+      highSchoolType: "NON",
+      universityType: "NON",
+      graduateSchoolType: "NON",
+    });
+    expect(childList?.[1]).toEqual({
+      name: "花子",
+      birthYear: 2018,
+      preschoolersType: "NON",
+      primarySchoolType: "NON",
+      juniorHighSchoolType: "NON",
+      highSchoolType: "NON",
+      universityType: "NON",
+      graduateSchoolType: "NON",
+    });
   });
 
   it("ラジオボタンの選択値が aiContext (定性データ) に正しく抽出されること", () => {
