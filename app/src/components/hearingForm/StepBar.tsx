@@ -27,22 +27,20 @@ export function StepBar({ currentStep, steps }: StepBarProps) {
             >
               {/* ステップの丸印 */}
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors duration-300 ${
-                  isCompleted
+                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors duration-300 ${isCompleted
                     ? "bg-primary border-primary text-primary-foreground"
                     : isActive
                       ? "border-primary text-primary font-bold"
                       : "bg-background border-muted text-muted-foreground"
-                }`}
+                  }`}
               >
                 {isCompleted ? <Check className="h-5 w-5" /> : index + 1}
               </div>
 
               {/* ステップ名（デスクトップ向け） */}
               <span
-                className={`mt-2 text-xs font-medium transition-colors md:text-sm ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
+                className={`mt-2 text-xs font-medium transition-colors md:text-sm ${isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
               >
                 {step.stepTitle}
               </span>
@@ -60,9 +58,6 @@ export function StepBar({ currentStep, steps }: StepBarProps) {
           value={progressValue}
           className="h-2 transition-all duration-500"
         />
-        <p className="text-muted-foreground mt-1 text-right text-[10px]">
-          全体完了率: {Math.round(progressValue)}%
-        </p>
       </div>
     </div>
   );

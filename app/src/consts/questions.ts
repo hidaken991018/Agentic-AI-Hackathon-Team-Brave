@@ -4,13 +4,6 @@ export const QUESTIONS = [
     stepTitle: "基本情報",
     questions: [
       {
-        id: "q01",
-        label: "あなたの名前を教えてください。",
-        type: "text",
-        required: true,
-        mapping: "basicProfile.user.name",
-      },
-      {
         id: "q02",
         label: "あなたの誕生年を教えてください。",
         type: "select",
@@ -119,7 +112,7 @@ export const QUESTIONS = [
     questions: [
       {
         id: "q14",
-        label: "数字はAIに自動算出させますか？",
+        label: "物価上昇率や収入成長率を自動算出しますか？",
         type: "radio",
         options: [
           { label: "はい", value: "yes" },
@@ -191,7 +184,7 @@ export const QUESTIONS = [
         fields: [
           {
             id: "q21",
-            label: "納める金額(月額)",
+            label: "家庭に納める金額(月額)",
             type: "number",
             required: true,
             mapping: "initialAmount",
@@ -254,7 +247,7 @@ export const QUESTIONS = [
         fields: [
           {
             id: "q30",
-            label: "納める金額(月額)",
+            label: "家庭に納める金額(月額)",
             type: "number",
             mapping: "initialAmount",
           },
@@ -584,7 +577,12 @@ export const QUESTIONS = [
     step: 6,
     stepTitle: "価値観",
     questions: [
-      { id: "q73", label: "資産目標額", type: "number", required: true },
+      {
+        id: "q73",
+        label: "65歳時点（公的年金開始年齢）までの資産目標額",
+        type: "number",
+        required: true,
+      },
       {
         id: "q74",
         label: "FPのコメントスタンス",
