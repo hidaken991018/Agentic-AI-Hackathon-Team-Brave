@@ -81,6 +81,57 @@ resource "google_cloud_run_v2_service" "front_back_app" {
           }
         }
       }
+
+      # GCP / Vertex AI（Secret Managerから取得）
+      env {
+        name = "GCP_PROJECT_NUMBER"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["GCP_PROJECT_NUMBER"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "VERTEX_AGT_LOCATION"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["VERTEX_AGT_LOCATION"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "VERTEX_AGT_RESOURCE_NAME"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["VERTEX_AGT_RESOURCE_NAME"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "VERTEX_GEMINI_MODEL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["VERTEX_GEMINI_MODEL"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "VERTEX_GEMINI_LOCATION"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["VERTEX_GEMINI_LOCATION"].secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 
