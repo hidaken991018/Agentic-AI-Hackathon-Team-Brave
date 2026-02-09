@@ -20,6 +20,9 @@ locals {
     "DATABASE_URL"          = "postgresql://user:password@host:5432/dbname" # GCPコンソールで実際の値に更新
     "FIRESTORE_DATABASE_ID" = "life-compass"
     "APP_URL"               = "https://example.com" # GCPコンソールで実際の値に更新
+    "FIREBASE_PRIVATE_KEY"  = "-----BEGIN PRIVATE KEY-----"              # GCPコンソールで実際の値に更新
+    "FIREBASE_CLIENT_EMAIL" = "example@project.iam.gserviceaccount.com"  # GCPコンソールで実際の値に更新
+    "FIREBASE_PROJECT_ID"   = "your-project-id"                          # GCPコンソールで実際の値に更新
   }
 }
 
