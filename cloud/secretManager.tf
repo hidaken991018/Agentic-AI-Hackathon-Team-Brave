@@ -20,6 +20,14 @@ locals {
     "DATABASE_URL"          = "postgresql://user:password@host:5432/dbname" # GCPコンソールで実際の値に更新
     "FIRESTORE_DATABASE_ID" = "life-compass"
     "APP_URL"               = "https://example.com" # GCPコンソールで実際の値に更新
+    "FIREBASE_PRIVATE_KEY"  = "-----BEGIN PRIVATE KEY-----"              # GCPコンソールで実際の値に更新
+    "FIREBASE_CLIENT_EMAIL" = "example@project.iam.gserviceaccount.com"  # GCPコンソールで実際の値に更新
+    "FIREBASE_PROJECT_ID"   = "your-project-id"                          # GCPコンソールで実際の値に更新
+    "GCP_PROJECT_NUMBER"    = "000000000000"                              # GCPコンソールで実際の値に更新
+    "VERTEX_AGT_LOCATION"   = "us-central1"
+    "VERTEX_AGT_RESOURCE_NAME" = "projects/000000000000/locations/us-central1/reasoningEngines/0000000000000000000" # GCPコンソールで実際の値に更新
+    "VERTEX_GEMINI_MODEL"   = "gemini-2.5-flash"
+    "VERTEX_GEMINI_LOCATION" = "us-central1"
   }
 }
 
