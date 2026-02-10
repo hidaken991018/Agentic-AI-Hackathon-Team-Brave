@@ -20,6 +20,7 @@ import { Question } from "@/services/hearing/schema/additionalQuestionsSchema";
 import { fetchAdditionalQuestions } from "../services/additionalQuestionsService";
 import { processAiInterpretations } from "../services/aiInterpretationService";
 import { processAndSaveAnswers } from "../services/answerProcessor";
+import { isAllAnswersEmpty } from "../services/answerValidator";
 
 export interface UseAnswerSubmissionOptions {
   sessionId: string | null;
@@ -68,6 +69,15 @@ export function useAnswerSubmission(
   const submitAnswers = async (answers: Record<string, unknown>) => {
     if (!sessionId || !user) {
       console.error("[useAnswerSubmission] Missing sessionId or user");
+      return;
+    }
+
+    // 全回答が空の場合はパイプラインをスキップし、直接ライフコンパスへ遷移
+    if (isAllAnswersEmpty(answers)) {
+      console.log(
+        "[useAnswerSubmission] All answers empty, skipping pipeline",
+      );
+      router.push(`/life-compass?sessionId=${sessionId}`);
       return;
     }
 
