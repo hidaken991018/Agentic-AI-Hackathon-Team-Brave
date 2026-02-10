@@ -39,6 +39,17 @@ resource "google_cloud_run_v2_service" "front_back_app" {
           }
         }
       }
+
+      # アプリケーションURL（CORS許可オリジン用、Secret Managerから取得）
+      env {
+        name = "APP_URL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["APP_URL"].secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 

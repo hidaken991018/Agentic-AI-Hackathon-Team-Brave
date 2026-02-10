@@ -17,7 +17,7 @@ import { getAdminAuth } from "@/libs/firebase/admin";
  * CORS 許可オリジン設定
  */
 const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL,
+  process.env.APP_URL,
   "http://localhost:3000",
   "http://localhost:3001",
 ].filter(Boolean) as string[];
