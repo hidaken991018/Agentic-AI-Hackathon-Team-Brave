@@ -22,7 +22,8 @@ async function getAIClient(): Promise<GoogleGenAI> {
 export async function queryGemini<T>(responseSchema: T, prompt: string) {
   const ai = await getAIClient();
   const model =
-    (await getEnv("GEMINI_MODEL")) || CONSTS.SETTING.GOOGLE.GEN_AI.DEFAULT_MODEL;
+    (await getEnv("VERTEX_GEMINI_MODEL")) ||
+    CONSTS.SETTING.GOOGLE.GEN_AI.DEFAULT_MODEL;
 
   const resp = await ai.models.generateContent({
     model,
