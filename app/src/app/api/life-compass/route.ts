@@ -25,10 +25,12 @@ function extractHearingJsonFromEvents(
   );
 
   for (const event of sortedEvents) {
+    // "hearing" または "hearing-additional-*" イベントを処理
     if (!event.invocationId.startsWith("hearing")) {
       continue;
     }
 
+    // イベントのコンテンツからデータを抽出
     const textPart = event.content?.parts?.find((p) => p.text);
     if (!textPart?.text) {
       continue;
@@ -38,11 +40,13 @@ function extractHearingJsonFromEvents(
       const data = JSON.parse(textPart.text);
 
       if (event.invocationId === "hearing" && data.hearingJson) {
+        // 初回ヒアリング: 完全なhearingJsonを設定
         hearingJson = data.hearingJson as HearingJson;
       } else if (
         event.invocationId.startsWith("hearing-additional-") &&
         data.hearingJsonUpdate
       ) {
+        // 追加質問: 部分更新をマージ
         if (hearingJson) {
           hearingJson = deepMerge(
             hearingJson as unknown as Record<string, unknown>,
@@ -153,6 +157,7 @@ export async function GET(request: NextRequest) {
     let aiComment: Omit<AiCommentJson, "quizDirectionList">;
     try {
       const parsed = JSON.parse(aiCommentRaw) as AiCommentJson;
+      // quizDirectionList を除外
       const { quizDirectionList: _, ...aiCommentWithoutQuiz } = parsed;
       aiComment = aiCommentWithoutQuiz;
     } catch {
