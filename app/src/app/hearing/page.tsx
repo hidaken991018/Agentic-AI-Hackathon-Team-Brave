@@ -19,15 +19,15 @@ import { useHearing } from "@/context/HearingContext";
 import { authenticatedFetch } from "@/libs/api/hearingApi";
 import { useAutoFill } from "@/libs/devUtils/autoFill";
 import { generateZodSchema } from "@/libs/formUtils/formSchemaGenerator";
+import { generateInitialValues } from "@/libs/formUtils/initialValues";
 import {
-  generateDefaultValues,
   LifePlanFormData,
   transformToApiPayload,
 } from "@/libs/formUtils/transformer";
 import { buildHearingJson, extractEstimations, validateHearingJson } from "@/libs/hearing/hearingJsonBuilder";
 import { generateOutputSchema } from "@/libs/hearing/outputSchemaGenerator";
 import { FlexibleQuestion } from "@/schema/hearingFormSchema";
-import { HearingJsonInput } from "@/schema/hearingJson/hearingJsonSchema";
+
 
 export default function LifePlanStepForm() {
   // 初回質問用
@@ -41,8 +41,8 @@ export default function LifePlanStepForm() {
   const { user, isAnonymous } = useAuth();
   const router = useRouter();
 
-  const defaultValues: Partial<HearingJsonInput> = useMemo(
-    () => generateDefaultValues(CONSTS.QUESTIONS),
+  const defaultValues = useMemo(
+    () => generateInitialValues(CONSTS.QUESTIONS),
     [],
   );
 

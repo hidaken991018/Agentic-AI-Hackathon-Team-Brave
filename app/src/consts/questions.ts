@@ -9,6 +9,7 @@ export const QUESTIONS = [
         type: "select",
         options: "year_range",
         required: true,
+        defaultValue: "1990",
         mapping: "basicProfile.user.birthYear",
       },
       {
@@ -35,6 +36,7 @@ export const QUESTIONS = [
           { label: "いいえ", value: "no" },
         ],
         required: true,
+        defaultValue: "no",
         mapping: "basicProfile.childList",
       },
       {
@@ -119,6 +121,7 @@ export const QUESTIONS = [
           { label: "いいえ", value: "no" },
         ],
         required: true,
+        defaultValue: "no",
       },
       {
         id: "q15",
@@ -132,6 +135,7 @@ export const QUESTIONS = [
         ],
         purpose: "qualitative",
         related: ["#016", "#017", "#020", "#028"],
+        defaultValue: "moderate",
       },
       {
         id: "q16",
@@ -167,6 +171,7 @@ export const QUESTIONS = [
         type: "select",
         options: "yes_no",
         required: true,
+        defaultValue: "yes",
       },
       {
         id: "q20",
@@ -218,6 +223,7 @@ export const QUESTIONS = [
         type: "select",
         options: "yes_no",
         required: true,
+        defaultValue: "no",
       },
       {
         id: "own_extra_income_group",
@@ -324,6 +330,7 @@ export const QUESTIONS = [
         label: "現在の月間生活費はいくらですか？（住居費を含む）",
         type: "number",
         required: true,
+        defaultValue: 220000,
         mapping: "expenses.currentMonthlyLivingCost",
       },
       {
@@ -331,6 +338,7 @@ export const QUESTIONS = [
         label: "お子様は何歳で独立すると想定しますか？",
         type: "number",
         required: true,
+        defaultValue: 0,
         mapping: "expenses.childIndependenceAge",
       },
       {
@@ -342,6 +350,7 @@ export const QUESTIONS = [
           { label: "持ち家", value: "own" },
         ],
         required: true,
+        defaultValue: "rent",
         mapping: "expenses.housingType",
       },
       {
@@ -365,6 +374,7 @@ export const QUESTIONS = [
         type: "select",
         options: "yes_no",
         required: true,
+        defaultValue: "no",
       },
       {
         id: "insurance_group",
@@ -476,6 +486,7 @@ export const QUESTIONS = [
         label: "現在の現金残高",
         type: "number",
         required: true,
+        defaultValue: 3000000,
         mapping: "assets.currentCash",
       },
       {
@@ -523,6 +534,7 @@ export const QUESTIONS = [
         type: "select",
         options: "yes_no",
         required: true,
+        defaultValue: "no",
       },
       {
         id: "loan_group",
@@ -582,6 +594,7 @@ export const QUESTIONS = [
         label: "65歳時点（公的年金開始年齢）までの資産目標額",
         type: "number",
         required: true,
+        defaultValue: 50000000,
       },
       {
         id: "q74",
@@ -594,6 +607,7 @@ export const QUESTIONS = [
         ],
         purpose: "qualitative",
         related: [],
+        defaultValue: "standard",
       },
       {
         id: "q75",
