@@ -7,7 +7,6 @@ import { getSessionEvents, SessionEvent } from "@/libs/google/sessionManager";
 import { convertLifePlanToTsvCompact } from "@/libs/lifeplan";
 import type { AiCommentJson } from "@/schema/aiCommentJson/aiCommentJsonSchema";
 
-
 /**
  * セッションイベントからヒアリングJSONを抽出・マージ
  *
@@ -26,12 +25,10 @@ function extractHearingJsonFromEvents(
   );
 
   for (const event of sortedEvents) {
-    // "hearing" または "hearing-additional-*" イベントを処理
     if (!event.invocationId.startsWith("hearing")) {
       continue;
     }
 
-    // イベントのコンテンツからデータを抽出
     const textPart = event.content?.parts?.find((p) => p.text);
     if (!textPart?.text) {
       continue;
@@ -41,13 +38,11 @@ function extractHearingJsonFromEvents(
       const data = JSON.parse(textPart.text);
 
       if (event.invocationId === "hearing" && data.hearingJson) {
-        // 初回ヒアリング: 完全なhearingJsonを設定
         hearingJson = data.hearingJson as HearingJson;
       } else if (
         event.invocationId.startsWith("hearing-additional-") &&
         data.hearingJsonUpdate
       ) {
-        // 追加質問: 部分更新をマージ
         if (hearingJson) {
           hearingJson = deepMerge(
             hearingJson as unknown as Record<string, unknown>,
@@ -61,6 +56,16 @@ function extractHearingJsonFromEvents(
   }
 
   return hearingJson;
+}
+
+/**
+ * 値が「空/デフォルト」かどうかを判定
+ * hearingJsonUpdateのスケルトンデフォルト値による上書きを防ぐ
+ */
+function isEmptyValue(value: unknown): boolean {
+  if (value === 0 || value === "") return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  return false;
 }
 
 /**
@@ -88,7 +93,7 @@ function deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>,
       );
-    } else if (sourceValue !== undefined) {
+    } else if (sourceValue !== undefined && !isEmptyValue(sourceValue)) {
       result[key] = sourceValue;
     }
   }
@@ -115,6 +120,7 @@ export async function GET(request: NextRequest) {
     const eventsResult = await getSessionEvents(sessionId);
 
     if (!eventsResult.ok) {
+      console.error("[life-compass] イベント取得エラー:", eventsResult.error.message);
       return NextResponse.json(
         {
           error: "Failed to get session events",
@@ -147,11 +153,10 @@ export async function GET(request: NextRequest) {
     let aiComment: Omit<AiCommentJson, "quizDirectionList">;
     try {
       const parsed = JSON.parse(aiCommentRaw) as AiCommentJson;
-      // quizDirectionList を除外
       const { quizDirectionList: _, ...aiCommentWithoutQuiz } = parsed;
       aiComment = aiCommentWithoutQuiz;
     } catch {
-      console.error("Failed to parse AI response:", aiCommentRaw);
+      console.error("[life-compass] Failed to parse AI response:", aiCommentRaw);
       return NextResponse.json(
         {
           error: "Failed to parse AI response",
@@ -162,14 +167,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 7. レスポンスを返す
-    const combinedData = {
-      lifePlan,
-      aiComment,
-    };
-
-    return NextResponse.json(combinedData);
+    return NextResponse.json({ lifePlan, aiComment });
   } catch (error) {
-    console.error("Error generating life compass data:", error);
+    console.error("[life-compass] Error:", error);
     return NextResponse.json(
       {
         error: "Failed to generate life compass data",
