@@ -8,4 +8,5 @@
   },
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "files.insertFinalNewline": true,
+  "python.terminal.activateEnvironment": false
 }
