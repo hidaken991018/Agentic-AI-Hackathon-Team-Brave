@@ -28,6 +28,7 @@ export interface FlexibleQuestion {
   label: string; // 特定の一文ではなく string 全般
   type: string; // "text" | "number" ... などのリテラルではなく string
   required?: boolean;
+  defaultValue?: string | number;
   arrayLabelPrefix?: string;
   options?: string | readonly QuestionOption[];
   mapping?: string;
