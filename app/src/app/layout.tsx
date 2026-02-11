@@ -20,6 +20,16 @@ export const metadata: Metadata = {
   title: "Life Compass - AIライフプラン診断",
   description:
     "AIがあなたの人生設計をサポート。プロのFPの知見とAIの分析力で、あなただけのライフプランを作成します。",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "Life Compass - AIライフプラン診断",
+    description:
+      "AIがあなたの人生設計をサポート。プロのFPの知見とAIの分析力で、あなただけのライフプランを作成します。",
+    images: [{ url: "/logo.png", width: 1024, height: 1024 }],
+  },
 };
 
 export default function RootLayout({
