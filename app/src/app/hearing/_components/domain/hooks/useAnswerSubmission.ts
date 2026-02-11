@@ -74,9 +74,8 @@ export function useAnswerSubmission(
 
     // 全回答が空の場合はパイプラインをスキップし、直接ライフコンパスへ遷移
     if (isAllAnswersEmpty(answers)) {
-      console.log(
-        "[useAnswerSubmission] All answers empty, skipping pipeline",
-      );
+      console.log("[useAnswerSubmission] All answers empty, skipping pipeline");
+      setIsSubmitting(true);
       router.push(`/life-compass?sessionId=${sessionId}`);
       return;
     }
@@ -138,7 +137,9 @@ export function useAnswerSubmission(
         }
       } else if (nextQuestionsData.status === "hearing_completed") {
         // ヒアリング完了 - ライフコンパスページへ遷移
-        console.log("[useAnswerSubmission] Hearing completed, redirecting to life-compass...");
+        console.log(
+          "[useAnswerSubmission] Hearing completed, redirecting to life-compass...",
+        );
         router.push(`/life-compass?sessionId=${sessionId}`);
       }
     } catch (err) {
