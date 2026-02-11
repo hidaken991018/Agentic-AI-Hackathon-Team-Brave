@@ -80,6 +80,8 @@ interface GeneratedQuestion {
   isRequired?: boolean;
   /** 選択肢（ラジオボタンやプルダウンの場合） */
   options?: string[];
+  /** 単位サフィックス（"万円", "%", "歳" など） */
+  suffix?: string;
 }
 
 /**
@@ -132,6 +134,7 @@ ${agentAnalysis}
 - 欠落している情報や矛盾点を解消するための質問を生成してください
 - **最大${MAX_QUESTIONS_PER_ROUND}問まで**生成してください（重要度の高い順）
 - 各質問には適切な回答形式を設定してください
+- numericの場合、適切な単位サフィックスを設定してください（例: 金額なら"万円"、パーセンテージなら"%"、年齢なら"歳"）
 - **任意フィールド（optional fields）や推奨情報については質問を生成しないでください**
 - **必須データの欠落や矛盾がある場合のみ質問を生成してください**
 `.trim();
@@ -177,6 +180,11 @@ function buildQuestionGenerationSchema() {
               type: "array",
               items: { type: "string" },
               description: "選択肢（radio/pulldownの場合）",
+            },
+            suffix: {
+              type: "string",
+              description:
+                "数値入力の単位サフィックス（numericの場合のみ。例: 万円, %, 歳）",
             },
           },
           required: [
@@ -237,6 +245,7 @@ function convertToQuestions(
       text: q.text,
       answerMethod,
       isRequired: false, // 常にfalseを設定（全質問任意）
+      ...(q.suffix && { suffix: q.suffix }),
     };
   });
 }

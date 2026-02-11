@@ -140,12 +140,20 @@ export function AdditionalQuestionField({
               <FormItem>
                 <FormLabel>{labelText}</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="数値を入力（任意）"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      className="w-36"
+                      placeholder="数値を入力（任意）"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    />
+                    {question.suffix && (
+                      <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">
+                        {question.suffix}
+                      </span>
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

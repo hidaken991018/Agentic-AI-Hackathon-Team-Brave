@@ -97,6 +97,8 @@ export const questionSchema = z.object({
   answerMethod: answerMethodSchema,
   /** この質問への回答が必須かどうか（デフォルト: false、全て任意） */
   isRequired: z.boolean().default(false),
+  /** 単位サフィックス（"万円", "%", "歳" など） */
+  suffix: z.string().optional(),
 });
 
 /** 質問型 */
