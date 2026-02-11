@@ -51,11 +51,11 @@ export function DynamicOptions({
         </>
       );
 
-    // 4. 期間選択（0年〜40年）
-    case "years_0_40":
+    // 4. 期間選択（0年〜50年）
+    case "years_0_50":
       return (
         <>
-          {Array.from({ length: 41 }, (_, i) => (
+          {Array.from({ length: 51 }, (_, i) => (
             <SelectItem key={i} value={i.toString()}>
               {i}年
             </SelectItem>

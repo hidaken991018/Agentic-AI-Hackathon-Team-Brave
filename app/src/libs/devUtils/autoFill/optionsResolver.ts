@@ -44,9 +44,9 @@ export function resolveOptions(options: unknown): Option[] {
         value: i.toString(),
       }));
 
-    case "years_0_40":
+    case "years_0_50":
       // 0年〜40年
-      return Array.from({ length: 41 }, (_, i) => ({
+      return Array.from({ length: 51 }, (_, i) => ({
         label: `${i}年`,
         value: i.toString(),
       }));

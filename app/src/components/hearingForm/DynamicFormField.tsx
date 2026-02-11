@@ -133,6 +133,17 @@ function FieldArraySection({ question }: { question: FlexibleQuestion }) {
     name: question.id,
   });
 
+  // サブフィールドのdefaultValueからデフォルトオブジェクトを生成
+  const defaultItem = (question.fields ?? []).reduce(
+    (acc: Record<string, unknown>, f: FlexibleQuestion) => {
+      if ("defaultValue" in f && f.defaultValue !== undefined) {
+        acc[f.id] = f.defaultValue;
+      }
+      return acc;
+    },
+    {},
+  );
+
   return (
     <div className="bg-muted/20 space-y-6 rounded-lg border p-4">
       <div className="flex items-center justify-between">
@@ -141,7 +152,7 @@ function FieldArraySection({ question }: { question: FlexibleQuestion }) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => append({})}
+          onClick={() => append(defaultItem)}
         >
           <Plus className="mr-1 h-4 w-4" /> 追加
         </Button>

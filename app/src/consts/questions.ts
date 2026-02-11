@@ -25,6 +25,7 @@ export const QUESTIONS = [
         type: "select",
         options: "year_range",
         required: false,
+        defaultValue: "1995",
         mapping: "basicProfile.partner.birthYear",
       },
       {
@@ -61,6 +62,7 @@ export const QUESTIONS = [
             options: "year_range",
             required: true,
             mapping: "birthYear",
+            defaultValue: "2020",
           },
           {
             id: "q08",
@@ -177,7 +179,8 @@ export const QUESTIONS = [
         id: "q20",
         label: "65歳までの間に何年間給与所得を受け取る想定ですか？",
         type: "select",
-        options: "years_0_40",
+        options: "years_0_50",
+        defaultValue: "43",
         condition: { field: "q19", operator: "===", value: "yes" },
       },
       {
@@ -189,17 +192,25 @@ export const QUESTIONS = [
         fields: [
           {
             id: "q21",
-            label: "家庭に納める金額(月額)",
+            label: "家庭に納める金額(月額)※単位は「万円」",
             type: "number",
             required: true,
             mapping: "initialAmount",
+            defaultValue: "35",
           },
-          { id: "q22", label: "収入概要", type: "text", mapping: "name" },
+          {
+            id: "q22",
+            label: "収入概要",
+            type: "text",
+            mapping: "name",
+            defaultValue: "本業収入",
+          },
           {
             id: "q23",
             label: "想定成長率(%)",
             type: "number",
             mapping: "growthRate",
+            defaultValue: 0,
           },
           {
             id: "q24",
@@ -207,6 +218,7 @@ export const QUESTIONS = [
             type: "select",
             options: "age_range",
             mapping: "startAge",
+            defaultValue: "25",
           },
           {
             id: "q25",
@@ -214,6 +226,7 @@ export const QUESTIONS = [
             type: "select",
             options: "age_range",
             mapping: "endAge",
+            defaultValue: "65",
           },
         ],
       },
@@ -253,23 +266,32 @@ export const QUESTIONS = [
         fields: [
           {
             id: "q30",
-            label: "家庭に納める金額(月額)",
+            label: "家庭に納める金額(月額)※単位は「万円」",
             type: "number",
             mapping: "initialAmount",
+            defaultValue: "15",
           },
-          { id: "q31", label: "概要", type: "text", mapping: "name" },
+          {
+            id: "q31",
+            label: "概要",
+            type: "text",
+            mapping: "name",
+            defaultValue: "パート収入",
+          },
           {
             id: "q32",
             label: "給与所得ですか？",
             type: "select",
             options: "yes_no",
             mapping: "isSalary",
+            defaultValue: "yes",
           },
           {
             id: "q33",
             label: "想定成長率(%)",
             type: "number",
             mapping: "growthRate",
+            defaultValue: 0,
           },
           {
             id: "q34",
@@ -277,6 +299,7 @@ export const QUESTIONS = [
             type: "select",
             options: "age_range",
             mapping: "startAge",
+            defaultValue: "25",
           },
           {
             id: "q35",
@@ -284,6 +307,7 @@ export const QUESTIONS = [
             type: "select",
             options: "age_range",
             mapping: "endAge",
+            defaultValue: "65",
           },
         ],
       },
@@ -327,10 +351,11 @@ export const QUESTIONS = [
     questions: [
       {
         id: "q41",
-        label: "現在の月間生活費はいくらですか？（住居費を含む）",
+        label:
+          "現在の月間生活費はいくらですか？（住居費を含む）※単位は「万円」",
         type: "number",
         required: true,
-        defaultValue: 220000,
+        defaultValue: 30,
         mapping: "expenses.currentMonthlyLivingCost",
       },
       {
@@ -338,7 +363,7 @@ export const QUESTIONS = [
         label: "お子様は何歳で独立すると想定しますか？",
         type: "number",
         required: true,
-        defaultValue: 0,
+        defaultValue: 22,
         mapping: "expenses.childIndependenceAge",
       },
       {
@@ -359,6 +384,7 @@ export const QUESTIONS = [
         type: "number",
         condition: { field: "q43", operator: "===", value: "rent" },
         mapping: "expenses.currentHousingCost",
+        defaultValue: "13",
       },
       {
         id: "q45",
@@ -406,6 +432,7 @@ export const QUESTIONS = [
               { label: "子供", value: "child" },
             ],
             mapping: "subscriber",
+            defaultValue: "self",
           },
           {
             id: "q50",
@@ -426,6 +453,7 @@ export const QUESTIONS = [
             type: "select",
             options: "age_range",
             mapping: "endAge",
+            defaultValue: "65",
           },
         ],
       },
@@ -457,7 +485,13 @@ export const QUESTIONS = [
         mapping: "expenses.lifeEventList",
         condition: { field: "q55", operator: "===", value: "yes" },
         fields: [
-          { id: "q56", label: "イベント名", type: "text", mapping: "name" },
+          {
+            id: "q56",
+            label: "イベント名",
+            type: "text",
+            mapping: "name",
+            defaultValue: "結婚式",
+          },
           {
             id: "q57",
             label: "発生年(西暦)",
@@ -465,7 +499,13 @@ export const QUESTIONS = [
             options: "future_year_range",
             mapping: "year",
           },
-          { id: "q58", label: "支出額", type: "number", mapping: "amount" },
+          {
+            id: "q58",
+            label: "支出額",
+            type: "number",
+            mapping: "amount",
+            defaultValue: "300",
+          },
         ],
       },
       {
@@ -483,17 +523,18 @@ export const QUESTIONS = [
     questions: [
       {
         id: "q60",
-        label: "現在の現金残高",
+        label: "現在の現金残高※単位は「万円」",
         type: "number",
         required: true,
-        defaultValue: 3000000,
+        defaultValue: 100,
         mapping: "assets.currentCash",
       },
       {
         id: "q61",
-        label: "毎月の貯蓄額",
+        label: "毎月の貯蓄額※単位は「万円」",
         type: "number",
         mapping: "assets.planedSaving.currentMonthlyAmount",
+        defaultValue: 5,
       },
       {
         id: "q62",
@@ -501,18 +542,21 @@ export const QUESTIONS = [
         type: "select",
         options: "age_range",
         mapping: "assets.planedSaving.endAge",
+        defaultValue: "65",
       },
       {
         id: "q63",
         label: "現在の投資資産額",
         type: "number",
         mapping: "assets.currentInvestments",
+        defaultValue: 150,
       },
       {
         id: "q64",
         label: "毎月の投資額",
         type: "number",
         mapping: "assets.planedInvestments.monthlyAmount",
+        defaultValue: 5,
       },
       {
         id: "q65",
@@ -520,6 +564,7 @@ export const QUESTIONS = [
         type: "select",
         options: "age_range",
         mapping: "assets.planedInvestments.endAge",
+        defaultValue: "60",
       },
       {
         id: "q66",
@@ -559,6 +604,7 @@ export const QUESTIONS = [
               { label: "変動", value: "variable" },
             ],
             mapping: "interestRateType",
+            defaultValue: "fixed",
           },
           {
             id: "q70",
@@ -591,10 +637,10 @@ export const QUESTIONS = [
     questions: [
       {
         id: "q73",
-        label: "65歳時点（公的年金開始年齢）までの資産目標額",
+        label: "65歳時点（公的年金開始年齢）までの資産目標額※単位は「万円」",
         type: "number",
         required: true,
-        defaultValue: 50000000,
+        defaultValue: 5000,
       },
       {
         id: "q74",
