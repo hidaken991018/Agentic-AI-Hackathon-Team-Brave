@@ -15,6 +15,7 @@ import { useHearing } from "@/context/HearingContext";
 import { useAdditionalQuestions } from "../_components/domain/hooks/useAdditionalQuestions";
 import { useAnswerSubmission } from "../_components/domain/hooks/useAnswerSubmission";
 import { useSessionIdGuard } from "../_components/domain/hooks/useSessionIdGuard";
+import { isAllAnswersEmpty } from "../_components/domain/services/answerValidator";
 
 /**
  * 追加質問ページ
@@ -66,6 +67,10 @@ export default function AdditionalQuestionsPage() {
       setQuestionCount(nextCount);
     },
   });
+
+  // 全回答が空かどうかを監視（ボタンラベルの動的切り替え用）
+  const watchedValues = form.watch();
+  const allEmpty = isAllAnswersEmpty(watchedValues);
 
   // エラーを統合
   const displayError = error || fetchError || submitError;
@@ -141,7 +146,11 @@ export default function AdditionalQuestionsPage() {
                 className="bg-primary hover:bg-primary/90 text-white"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "送信中..." : "回答を送信"}
+                {isSubmitting
+                  ? "送信中..."
+                  : allEmpty
+                    ? "スキップして次へ進む"
+                    : "回答を送信"}
               </Button>
             </div>
           </Card>
