@@ -1,7 +1,21 @@
-export default function Dashboard() {
+import { CTASection } from "@/app/_lp-components/ui/CTASection";
+import { FeaturesSection } from "@/app/_lp-components/ui/FeaturesSection";
+import { Footer } from "@/app/_lp-components/ui/Footer";
+import { HeroSection } from "@/app/_lp-components/ui/HeroSection";
+import { PainPointsSection } from "@/app/_lp-components/ui/PainPointsSection";
+import { StepsSection } from "@/app/_lp-components/ui/StepsSection";
+import { TechSection } from "@/app/_lp-components/ui/TechSection";
+
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-bold">履歴ダッシュボード画面です</h1>
-    </div>
+    <main className="overflow-x-hidden">
+      <HeroSection />
+      <PainPointsSection />
+      <FeaturesSection />
+      <StepsSection />
+      <TechSection />
+      <CTASection />
+      <Footer />
+    </main>
   );
 }

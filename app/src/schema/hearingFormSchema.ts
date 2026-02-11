@@ -40,4 +40,5 @@ export interface FlexibleQuestion {
   fields?: FlexibleQuestion[]; // 再帰的な構造を許容
   purpose?: string;
   related?: readonly string[] | string[];
+  suffix?: string; // "万円", "%", "歳" など
 }

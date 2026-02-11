@@ -120,7 +120,16 @@ function renderInput(
         </RadioGroup>
       );
     case "number":
-      return <Input type="number" {...field} />;
+      return (
+        <div className="flex items-center gap-2">
+          <Input type="number" className="w-36" {...field} />
+          {q.suffix && (
+            <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">
+              {q.suffix}
+            </span>
+          )}
+        </div>
+      );
     default:
       return <Input {...field} />;
   }
