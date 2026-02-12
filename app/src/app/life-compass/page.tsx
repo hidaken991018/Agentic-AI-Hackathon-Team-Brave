@@ -42,6 +42,7 @@ export default function LifePlanPage() {
         const result: LifeCompassData = await response.json();
         setData(result);
       } catch (err) {
+        console.error("[life-compass page] エラー:", err);
         setError(err instanceof Error ? err.message : "エラーが発生しました");
       } finally {
         setIsLoading(false);

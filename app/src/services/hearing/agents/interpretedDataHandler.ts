@@ -287,7 +287,7 @@ export async function handleInterpretedData(
 
   const { structuredData, estimations } = geminiResult.value;
 
-  const invocationId = "hearing";
+  const invocationId = "hearing-interpreted";
 
   // 3. セッションに構造化データを保存（リトライは axiosClient で一元管理）
   // REST API では期限切れセッションが自動削除されるため、

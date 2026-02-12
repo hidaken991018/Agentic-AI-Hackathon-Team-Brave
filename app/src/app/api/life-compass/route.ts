@@ -7,7 +7,6 @@ import { getSessionEvents, SessionEvent } from "@/libs/google/sessionManager";
 import { convertLifePlanToTsvCompact } from "@/libs/lifeplan";
 import type { AiCommentJson } from "@/schema/aiCommentJson/aiCommentJsonSchema";
 
-
 /**
  * セッションイベントからヒアリングJSONを抽出・マージ
  *
@@ -64,6 +63,16 @@ function extractHearingJsonFromEvents(
 }
 
 /**
+ * 値が「空/デフォルト」かどうかを判定
+ * hearingJsonUpdateのスケルトンデフォルト値による上書きを防ぐ
+ */
+function isEmptyValue(value: unknown): boolean {
+  if (value === 0 || value === "") return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  return false;
+}
+
+/**
  * オブジェクトの深いマージ
  */
 function deepMerge(
@@ -88,7 +97,7 @@ function deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>,
       );
-    } else if (sourceValue !== undefined) {
+    } else if (sourceValue !== undefined && !isEmptyValue(sourceValue)) {
       result[key] = sourceValue;
     }
   }
@@ -115,6 +124,7 @@ export async function GET(request: NextRequest) {
     const eventsResult = await getSessionEvents(sessionId);
 
     if (!eventsResult.ok) {
+      console.error("[life-compass] イベント取得エラー:", eventsResult.error.message);
       return NextResponse.json(
         {
           error: "Failed to get session events",
@@ -151,7 +161,7 @@ export async function GET(request: NextRequest) {
       const { quizDirectionList: _, ...aiCommentWithoutQuiz } = parsed;
       aiComment = aiCommentWithoutQuiz;
     } catch {
-      console.error("Failed to parse AI response:", aiCommentRaw);
+      console.error("[life-compass] Failed to parse AI response:", aiCommentRaw);
       return NextResponse.json(
         {
           error: "Failed to parse AI response",
@@ -162,14 +172,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 7. レスポンスを返す
-    const combinedData = {
-      lifePlan,
-      aiComment,
-    };
-
-    return NextResponse.json(combinedData);
+    return NextResponse.json({ lifePlan, aiComment });
   } catch (error) {
-    console.error("Error generating life compass data:", error);
+    console.error("[life-compass] Error:", error);
     return NextResponse.json(
       {
         error: "Failed to generate life compass data",

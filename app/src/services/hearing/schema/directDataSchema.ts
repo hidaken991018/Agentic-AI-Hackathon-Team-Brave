@@ -58,8 +58,8 @@ export const directDataRequestSchema = z.object({
   sessionId: z.string().min(1, "セッション ID は必須です"),
   /** 保存する直接データ */
   data: dataObjectSchema,
-  /** Invocation ID（省略時は "hearing" がデフォルト） */
-  invocationId: z.string().min(1).optional(),
+  /** Invocation ID（必須） */
+  invocationId: z.string().min(1),
 });
 
 /**
