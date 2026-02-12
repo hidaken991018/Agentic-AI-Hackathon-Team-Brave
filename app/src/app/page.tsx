@@ -1,6 +1,5 @@
 import { CTASection } from "@/app/_lp-components/ui/CTASection";
 import { FeaturesSection } from "@/app/_lp-components/ui/FeaturesSection";
-import { Footer } from "@/app/_lp-components/ui/Footer";
 import { HeroSection } from "@/app/_lp-components/ui/HeroSection";
 import { PainPointsSection } from "@/app/_lp-components/ui/PainPointsSection";
 import { StepsSection } from "@/app/_lp-components/ui/StepsSection";
@@ -15,7 +14,6 @@ export default function LandingPage() {
       <StepsSection />
       <TechSection />
       <CTASection />
-      <Footer />
     </main>
   );
 }
