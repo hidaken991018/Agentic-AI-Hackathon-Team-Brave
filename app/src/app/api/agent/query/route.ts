@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     : await createSessionId(userId);
 
   // === FP AI によるJson更新指示の生成 ===
-   const promptInstructToJsonEditor = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
+  const promptInstructToJsonEditor = `ライフプランデータを分析し、以下のルールに従って各項目を作成してください。
 
   ### 各項目の作成ルール
   1. commentList:
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     - 記述形式：「ユーザーは〇〇年頃に△△という状況になるため、☆☆に関する知識を問うクイズを出題し、□□の意識を高める方針とする」といった戦略的な内容にしてください。
     - 改行は \n にエスケープし、1つの連続した文字列として格納してください。`;
 
-  const aijsonResponse = await jsonEditor(aiCommentJsonSchemaForLlm, promptInstructToJsonEditor);
+  await jsonEditor(aiCommentJsonSchemaForLlm, promptInstructToJsonEditor);
 
   const fpAiInstructionStart = Date.now();
   const instructions = await fpInstructor(

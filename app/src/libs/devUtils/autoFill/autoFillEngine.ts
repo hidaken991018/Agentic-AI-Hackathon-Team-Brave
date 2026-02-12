@@ -4,7 +4,7 @@
  */
 
 import _ from "lodash";
-import { UseFormReturn } from "react-hook-form";
+import { FieldValues, UseFormReturn } from "react-hook-form";
 
 import { FlexibleQuestion, StepData } from "@/schema/hearingFormSchema";
 
@@ -24,7 +24,7 @@ export class AutoFillEngine {
    */
   fillForm(
     steps: readonly StepData[],
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     options: FillOptions = {},
   ): void {
     const personaData = this.getPersonaData(options.persona);
@@ -51,7 +51,7 @@ export class AutoFillEngine {
    */
   fillStep(
     step: StepData,
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     options: FillOptions = {},
   ): void {
     const personaData = this.getPersonaData(options.persona);
@@ -88,7 +88,7 @@ export class AutoFillEngine {
    */
   private fillUnconditionalFields(
     steps: readonly StepData[],
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     personaData: PersonaData,
   ): void {
     steps.forEach((step) => {
@@ -106,7 +106,7 @@ export class AutoFillEngine {
    */
   private fillConditionalFields(
     steps: readonly StepData[],
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     personaData: PersonaData,
   ): void {
     steps.forEach((step) => {
@@ -130,7 +130,7 @@ export class AutoFillEngine {
    */
   private fillQuestion(
     question: FlexibleQuestion,
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     personaData: PersonaData,
   ): void {
     if (question.type === "field_array") {
@@ -157,10 +157,13 @@ export class AutoFillEngine {
    */
   private fillFieldArrayQuestion(
     question: FlexibleQuestion,
-    form: UseFormReturn<any>,
+    form: UseFormReturn,
     personaData: PersonaData,
   ): void {
-    const arrayData = this.filler.fillField(question, personaData) as any[];
+    const arrayData = this.filler.fillField(question, personaData) as Record<
+      string,
+      unknown
+    >[];
 
     if (!Array.isArray(arrayData) || arrayData.length === 0) {
       console.log(`[AutoFill] No data for field array: ${question.id}`);
@@ -182,13 +185,13 @@ export class AutoFillEngine {
 
     // 新しいエントリを追加
     const newEntries = arrayData.map((entry) => {
-      const entryData: Record<string, any> = {};
+      const entryData: Record<string, unknown> = {};
 
       // 各フィールドを処理
       if (question.fields) {
         question.fields.forEach((field) => {
           const fieldMapping = field.mapping || "";
-          let value: any = undefined;
+          let value: unknown = undefined;
 
           // マッピングに基づいて値を取得
           if (fieldMapping && entry[fieldMapping] !== undefined) {
@@ -221,7 +224,10 @@ export class AutoFillEngine {
   /**
    * 条件を評価
    */
-  private evaluateCondition(condition: any, values: any): boolean {
+  private evaluateCondition(
+    condition: NonNullable<FlexibleQuestion["condition"]>,
+    values: FieldValues,
+  ): boolean {
     const fieldValue = _.get(values, condition.field);
     const operator = condition.operator || "===";
 

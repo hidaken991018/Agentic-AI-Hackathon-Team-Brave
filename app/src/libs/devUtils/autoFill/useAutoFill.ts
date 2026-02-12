@@ -21,7 +21,7 @@ interface UseAutoFillReturn {
  * 自動入力機能のフック
  */
 export function useAutoFill(
-  form: UseFormReturn<any>,
+  form: UseFormReturn,
   steps: readonly StepData[],
 ): UseAutoFillReturn {
   const [isEnabled, setIsEnabled] = useState(false);

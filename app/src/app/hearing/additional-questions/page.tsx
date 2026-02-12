@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { AdditionalQuestionField } from "@/components/hearingForm/AdditionalQuestionField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -69,7 +69,7 @@ export default function AdditionalQuestionsPage() {
   });
 
   // 全回答が空かどうかを監視（ボタンラベルの動的切り替え用）
-  const watchedValues = form.watch();
+  const watchedValues = useWatch({ control: form.control });
   const allEmpty = isAllAnswersEmpty(watchedValues);
 
   // エラーを統合

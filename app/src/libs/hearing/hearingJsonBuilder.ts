@@ -1,4 +1,5 @@
 import _ from "lodash";
+import z from "zod";
 
 import {
   HearingJsonInput,
@@ -182,12 +183,12 @@ export function validateHearingJson(hearingJson: HearingJsonInput): {
   try {
     const validated = hearingJsonSchema.parse(hearingJson);
     return { success: true, data: validated };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[HearingJsonBuilder] Validation failed:", error);
 
     // Zodエラーの場合、詳細な情報を抽出
-    if (error?.issues) {
-      const errorMessages = error.issues.map((issue: any) => {
+    if (error instanceof z.ZodError) {
+      const errorMessages = error.issues.map((issue) => {
         const path = issue.path.join(".");
         return `${path}: ${issue.message}`;
       });
