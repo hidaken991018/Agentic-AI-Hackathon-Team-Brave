@@ -51,7 +51,7 @@ export interface UseAdditionalQuestionsReturn {
  * });
  */
 export function useAdditionalQuestions(
-  options: UseAdditionalQuestionsOptions
+  options: UseAdditionalQuestionsOptions,
 ): UseAdditionalQuestionsReturn {
   const { sessionId, user, initialQuestionCount = 0 } = options;
   const router = useRouter();
@@ -82,10 +82,12 @@ export function useAdditionalQuestions(
         setQuestions(data.questions);
         setQuestionCount(data.questionCount);
         console.log(
-          `[useAdditionalQuestions] Loaded ${data.questions.length} questions (round ${data.questionCount})`
+          `[useAdditionalQuestions] Loaded ${data.questions.length} questions (round ${data.questionCount})`,
         );
       } else if (data.status === "hearing_completed") {
-        console.log("[useAdditionalQuestions] Hearing completed, redirecting...");
+        console.log(
+          "[useAdditionalQuestions] Hearing completed, redirecting...",
+        );
         router.push(`/life-compass?sessionId=${sessionId}`);
       }
     } catch (err) {
@@ -102,7 +104,9 @@ export function useAdditionalQuestions(
     if (!sessionId || !user) return;
 
     // 初回マウント時のみ実行
-    console.log("[useAdditionalQuestions] Fetching questions (initial mount)...");
+    console.log(
+      "[useAdditionalQuestions] Fetching questions (initial mount)...",
+    );
     setLoading(true);
     setError(null);
     setContextError(null);
@@ -117,24 +121,29 @@ export function useAdditionalQuestions(
           setQuestions(data.questions);
           setQuestionCount(data.questionCount);
           console.log(
-            `[useAdditionalQuestions] Loaded ${data.questions.length} questions (round ${data.questionCount})`
+            `[useAdditionalQuestions] Loaded ${data.questions.length} questions (round ${data.questionCount})`,
           );
         } else if (data.status === "hearing_completed") {
-          console.log("[useAdditionalQuestions] Hearing completed, redirecting...");
+          console.log(
+            "[useAdditionalQuestions] Hearing completed, redirecting...",
+          );
           router.push(`/life-compass?sessionId=${sessionId}`);
         }
       })
       .catch((err) => {
         const errorMessage = "追加質問の取得に失敗しました。";
-        console.error("[useAdditionalQuestions] Error fetching questions:", err);
+        console.error(
+          "[useAdditionalQuestions] Error fetching questions:",
+          err,
+        );
         setError(errorMessage);
         setContextError(errorMessage);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [sessionId, user]); // sessionIdとuserのみ依存
-  // questionCountは依存配列に含めない(初回値のみ使用)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, user]); // sessionIdとuserのみ依存（初回マウント時のみ実行）
 
   return {
     questions,
