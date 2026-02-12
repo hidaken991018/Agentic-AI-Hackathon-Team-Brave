@@ -1,4 +1,3 @@
-import type { LucideIcon } from "lucide-react";
 import {
   Brain,
   ClipboardList,
@@ -13,6 +12,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+
+import type { LucideIcon } from "lucide-react";
 
 export type SectionItem = {
   icon: LucideIcon;
