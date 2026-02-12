@@ -80,6 +80,7 @@ export default function LifePlanStepForm() {
 
     if (isValid) {
       setCurrentStep((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       console.log("エラー中のフィールド:", initialForm.formState.errors);
     }
@@ -278,7 +279,10 @@ export default function LifePlanStepForm() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setCurrentStep((s) => s - 1)}
+                onClick={() => {
+                  setCurrentStep((s) => s - 1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 disabled={currentStep === 0}
               >
                 戻る
