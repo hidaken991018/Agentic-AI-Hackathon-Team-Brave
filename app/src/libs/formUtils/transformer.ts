@@ -90,25 +90,40 @@ export const transformToApiPayload = (
             // mapping がある場合は、空でもデフォルト値を設定
             if (subMapping) {
               // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
-              const mappingLower = typeof subMapping === "string" ? subMapping.toLowerCase() : "";
+              const mappingLower =
+                typeof subMapping === "string" ? subMapping.toLowerCase() : "";
               const shouldConvertToNumber =
                 subField.type === "number" ||
                 (typeof subMapping === "string" &&
                   (mappingLower.includes("year") ||
-                   mappingLower.includes("age") ||
-                   mappingLower.includes("amount") ||
-                   mappingLower.includes("rate") ||
-                   mappingLower.includes("cost") ||
-                   mappingLower.includes("ratio")));
+                    mappingLower.includes("age") ||
+                    mappingLower.includes("amount") ||
+                    mappingLower.includes("rate") ||
+                    mappingLower.includes("cost") ||
+                    mappingLower.includes("ratio")));
 
               // 空の値の場合、デフォルト値を設定
               let finalSubValue;
-              if (subValue === undefined || subValue === null || subValue === "") {
+              if (
+                subValue === undefined ||
+                subValue === null ||
+                subValue === ""
+              ) {
                 finalSubValue = shouldConvertToNumber ? 0 : "";
               } else {
                 finalSubValue = shouldConvertToNumber
                   ? Number(subValue)
                   : subValue;
+              }
+
+              // パーセント入力（suffix: "%"）を小数形式に変換（例: 2 → 0.02）
+              const subSuffix = _.get(subField, "suffix");
+              if (
+                subSuffix === "%" &&
+                typeof finalSubValue === "number" &&
+                finalSubValue !== 0
+              ) {
+                finalSubValue = finalSubValue / 100;
               }
 
               _.set(obj, subMapping, finalSubValue);
@@ -150,16 +165,17 @@ export const transformToApiPayload = (
       // B. 通常の質問
       else {
         // 型変換: type="number" または mapping に数値フィールド名が含まれる場合は数値に変換
-        const mappingLower = typeof mapping === "string" ? mapping.toLowerCase() : "";
+        const mappingLower =
+          typeof mapping === "string" ? mapping.toLowerCase() : "";
         const shouldConvertToNumber =
           q.type === "number" ||
           (typeof mapping === "string" &&
             (mappingLower.includes("year") ||
-             mappingLower.includes("age") ||
-             mappingLower.includes("amount") ||
-             mappingLower.includes("rate") ||
-             mappingLower.includes("cost") ||
-             mappingLower.includes("ratio")));
+              mappingLower.includes("age") ||
+              mappingLower.includes("amount") ||
+              mappingLower.includes("rate") ||
+              mappingLower.includes("cost") ||
+              mappingLower.includes("ratio")));
 
         // 空の値の場合、デフォルト値を設定（必須フィールドのバリデーションエラーを防ぐ）
         let finalValue;
@@ -167,6 +183,16 @@ export const transformToApiPayload = (
           finalValue = shouldConvertToNumber ? 0 : "";
         } else {
           finalValue = shouldConvertToNumber ? Number(rawValue) : rawValue;
+        }
+
+        // パーセント入力（suffix: "%"）を小数形式に変換（例: 2 → 0.02）
+        const suffix = _.get(q, "suffix");
+        if (
+          suffix === "%" &&
+          typeof finalValue === "number" &&
+          finalValue !== 0
+        ) {
+          finalValue = finalValue / 100;
         }
 
         // Lodash の _.set でセット
