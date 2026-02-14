@@ -1,4 +1,4 @@
-import { Compass } from "lucide-react";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto max-w-5xl px-6">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex items-center gap-2">
-            <Compass className="h-5 w-5" />
+            <Image src="/logo.png" alt="Life Compass" width={24} height={24} />
             <span className="text-lg font-bold tracking-wide text-primary-foreground">
               Life Compass
             </span>
