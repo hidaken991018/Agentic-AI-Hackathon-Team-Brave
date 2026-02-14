@@ -175,7 +175,7 @@ export const hearingBaseSchema = z.object({
       growthRate: z
         .number()
         .describe("資産 > 計画貯蓄 > 貯蓄の増加率（小数形式: 0.02 = 2%）"),
-      endAge: z.number().describe("資産 > 計画貯蓄 > 貯蓄の増加率"),
+      endAge: z.number().describe("資産 > 計画貯蓄 > 貯蓄終了年齢"),
     }),
     current: z.object({
       investments: z.number().describe("資産 > 初期投資資産（万円）"),

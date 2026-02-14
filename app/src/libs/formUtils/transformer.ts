@@ -121,7 +121,7 @@ export const transformToApiPayload = (
               if (
                 subSuffix === "%" &&
                 typeof finalSubValue === "number" &&
-                finalSubValue !== 0
+                finalSubValue >= 1
               ) {
                 finalSubValue = finalSubValue / 100;
               }
@@ -190,7 +190,7 @@ export const transformToApiPayload = (
         if (
           suffix === "%" &&
           typeof finalValue === "number" &&
-          finalValue !== 0
+          finalValue >= 1
         ) {
           finalValue = finalValue / 100;
         }
