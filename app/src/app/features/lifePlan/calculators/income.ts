@@ -37,6 +37,8 @@ function calculatePersonIncome(
     }
   }
 
+  const baseAge = calculateAge(birthYear, baseYear);
+
   for (const year of years) {
     const age = calculateAge(birthYear, year);
     let yearlyIncome = 0;
@@ -44,12 +46,14 @@ function calculatePersonIncome(
     // 安定収入の計算
     for (const stable of personIncome.stableIncomeList) {
       if (isAgeInRange(age, stable.startAge, stable.endAge)) {
-        // 勤続年数を計算（startAgeからの経過年数）
-        const yearsWorked = age - stable.startAge;
+        // 現在の年（baseYear）を基準にした経過年数
+        // initialAmountは現在の月収なので、baseYear以降の成長のみ適用
+        const growthYears = Math.max(0, age - Math.max(stable.startAge, baseAge));
+        const annualInitial = stable.initialAmount * 12;
         const income = compoundGrowth(
-          stable.initialAmount,
+          annualInitial,
           stable.growthRate,
-          yearsWorked,
+          growthYears,
         );
         yearlyIncome += income;
 
@@ -66,7 +70,6 @@ function calculatePersonIncome(
         yearlyIncome += temp.amount;
       }
     }
-
     // 年金の計算（退職後）
     if (age >= PENSION_START_AGE && age > retirementAge) {
       // 年金額 = 退職時収入の一定割合
@@ -74,11 +77,13 @@ function calculatePersonIncome(
       if (lastWorkingIncome === 0) {
         // 退職時の収入を推定
         for (const stable of personIncome.stableIncomeList) {
-          const yearsWorked = stable.endAge - stable.startAge;
+          const growthYears =
+            Math.max(0, stable.endAge - Math.max(stable.startAge, baseAge));
+          const annualInitial = stable.initialAmount * 12;
           const estimatedIncome = compoundGrowth(
-            stable.initialAmount,
+            annualInitial,
             stable.growthRate,
-            yearsWorked,
+            growthYears,
           );
           lastWorkingIncome = Math.max(lastWorkingIncome, estimatedIncome);
         }
@@ -132,18 +137,23 @@ export function calculateIncome(params: IncomeCalculationParams): IncomeOutput {
  */
 export function getLastWorkingIncome(
   personIncome: PersonIncome | undefined,
+  baseAge: number = 0,
 ): number {
   if (!personIncome) return 0;
 
   let maxIncome = 0;
   for (const stable of personIncome.stableIncomeList) {
-    const yearsWorked = stable.endAge - stable.startAge;
-    const income = compoundGrowth(
-      stable.initialAmount,
-      stable.growthRate,
-      yearsWorked,
+    const growthYears = Math.max(
+      0,
+      stable.endAge - Math.max(stable.startAge, baseAge),
     );
-    maxIncome = Math.max(maxIncome, income);
+    const annualInitial = stable.initialAmount * 12;
+    const annualIncome = compoundGrowth(
+      annualInitial,
+      stable.growthRate,
+      growthYears,
+    );
+    maxIncome = Math.max(maxIncome, annualIncome);
   }
   return maxIncome;
 }
