@@ -7,13 +7,13 @@ import { TechSection } from "@/app/_lp-components/ui/TechSection";
 
 export default function LandingPage() {
   return (
-    <main className="overflow-x-hidden">
+    <div className="overflow-x-hidden">
       <HeroSection />
       <PainPointsSection />
       <FeaturesSection />
       <StepsSection />
       <TechSection />
       <CTASection />
-    </main>
+    </div>
   );
 }
