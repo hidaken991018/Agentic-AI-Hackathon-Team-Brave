@@ -280,6 +280,11 @@ export class FieldFiller {
       return (currentYear + 5).toString(); // 5年後
     }
 
+    // 年範囲（子どもの誕生年など）
+    if (q.options === "past_and_future_year_range") {
+      return "2020";
+    }
+
     // 年範囲（保険加入年等）
     if (q.options === "year_range") {
       return "2020";

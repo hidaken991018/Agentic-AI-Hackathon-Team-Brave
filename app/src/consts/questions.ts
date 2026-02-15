@@ -59,7 +59,7 @@ export const QUESTIONS = [
             id: "q07",
             label: "誕生年",
             type: "select",
-            options: "year_range",
+            options: "past_and_future_year_range",
             required: true,
             mapping: "birthYear",
             defaultValue: "2020",
