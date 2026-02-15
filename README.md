@@ -188,3 +188,21 @@ terraform init      # 初期化
 terraform plan      # 変更確認
 terraform apply     # 適用
 ```
+
+## ライセンス
+
+本プロジェクトは [MIT License](LICENSE) の下で公開されています。
+
+### 使用している主な OSS とライセンス
+
+| カテゴリ | 主要ライブラリ | ライセンス |
+| --- | --- | --- |
+| フレームワーク | Next.js, React | MIT |
+| AI / GCP | google-cloud-aiplatform, google-genai, vertexai | Apache 2.0 |
+| 認証 | Firebase, firebase-admin | Apache 2.0 |
+| バリデーション | Zod | MIT |
+| DB | Prisma, pg | Apache 2.0 / MIT |
+| UI | Tailwind CSS, Radix UI, Recharts, Lucide | MIT |
+| Python ツール | Ruff, MyPy | MIT |
+
+依存パッケージの詳細なライセンス情報は `app/node_modules/*/LICENSE` および `ai/.venv/lib/*/LICENSE` を参照してください。
