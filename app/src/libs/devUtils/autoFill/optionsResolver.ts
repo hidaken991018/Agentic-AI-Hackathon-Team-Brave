@@ -30,6 +30,16 @@ export function resolveOptions(options: unknown): Option[] {
         return { label: `${year}年`, value: year.toString() };
       });
 
+    case "past_and_future_year_range":
+      // 1950年〜現在+20年（子どもの誕生年など）
+      return Array.from(
+        { length: currentYear + 20 - 1949 },
+        (_, i) => {
+          const year = 1950 + i;
+          return { label: `${year}年`, value: year.toString() };
+        },
+      );
+
     case "future_year_range":
       // 現在〜2100年までの年
       return Array.from({ length: 2100 - currentYear + 1 }, (_, i) => {

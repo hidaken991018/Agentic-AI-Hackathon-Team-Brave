@@ -24,6 +24,29 @@ export function DynamicOptions({
         </>
       );
 
+    // 1.5. 過去〜未来の年（子どもの誕生年など：100年前〜20年先）
+    case "past_and_future_year_range":
+      return (
+        <>
+          {Array.from({ length: 20 }, (_, i) => {
+            const year = currentYear + 20 - i;
+            return (
+              <SelectItem key={year} value={year.toString()}>
+                {year}年
+              </SelectItem>
+            );
+          })}
+          {Array.from({ length: 100 }, (_, i) => {
+            const year = currentYear - i;
+            return (
+              <SelectItem key={year} value={year.toString()}>
+                {year}年
+              </SelectItem>
+            );
+          })}
+        </>
+      );
+
     // 2. 現在〜未来の年（ライフイベント、完済予定など：50年先まで）
     case "future_year_range":
       return (
